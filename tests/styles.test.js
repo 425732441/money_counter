@@ -21,4 +21,20 @@ describe("compact widget layout CSS", () => {
     assert.match(styles, /\.status-widget\.is-edge-hidden > \*\s*\{[^}]*visibility:\s*hidden;/);
     assert.match(styles, /\.status-widget\.is-edge-hidden::before\s*\{[^}]*display:\s*none;/);
   });
+
+  it("hides desktop status text when the widget becomes an edge strip", () => {
+    assert.match(styles, /\.widget-shell\.is-edge-hidden\s+\.status-line\s*\{[^}]*display:\s*none;/);
+  });
+});
+
+describe("settings window layout CSS", () => {
+  it("keeps the settings view fully visible when possible and scrollable as fallback", () => {
+    assert.match(styles, /body\.is-settings-window\s*\{[^}]*overflow:\s*hidden;/);
+    assert.match(styles, /\.settings-shell\s*\{[^}]*height:\s*100vh;[^}]*overflow-y:\s*auto;/);
+    assert.match(styles, /\.settings-shell\s*\{[^}]*align-items:\s*start;/);
+  });
+
+  it("keeps the main status menu narrow", () => {
+    assert.match(styles, /\.status-menu\s*\{[^}]*width:\s*132px;/);
+  });
 });

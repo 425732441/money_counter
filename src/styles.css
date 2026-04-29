@@ -31,6 +31,11 @@ body {
   overflow: hidden;
 }
 
+body.is-settings-window {
+  background: #f0fdfa;
+  overflow: hidden;
+}
+
 button,
 input,
 select {
@@ -59,6 +64,7 @@ button:disabled {
 }
 
 .widget-shell {
+  position: relative;
   width: 100vw;
   height: 100vh;
   display: block;
@@ -72,7 +78,7 @@ button:disabled {
   --edge-progress: 2%;
   position: relative;
   min-width: 0;
-  height: 100vh;
+  height: 60px;
   display: grid;
   grid-template-columns: 30px minmax(112px, 1fr) 56px 32px 38px 169px;
   align-items: center;
@@ -112,6 +118,7 @@ button:disabled {
 
 .status-widget.is-edge-hidden {
   display: block;
+  height: 100vh;
   padding: 0;
   background: #102522;
   box-shadow: none;
@@ -149,6 +156,14 @@ button:disabled {
   bottom: 0;
   width: 6px;
   height: var(--edge-progress);
+}
+
+.widget-shell.is-edge-hidden .status-line {
+  display: none;
+}
+
+.widget-shell.has-status-menu .status-line {
+  display: none;
 }
 
 .coin-mark,
@@ -286,6 +301,39 @@ button:disabled {
   stroke-linejoin: round;
 }
 
+.status-menu {
+  position: absolute;
+  top: 42px;
+  right: 32px;
+  z-index: 6;
+  width: 132px;
+  padding: 5px;
+  border: 1px solid rgba(153, 246, 228, 0.24);
+  border-radius: 7px;
+  background: #102522;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.3);
+  cursor: default;
+}
+
+.status-menu button {
+  width: 100%;
+  min-height: 28px;
+  border: 0;
+  border-radius: 5px;
+  padding: 0 8px;
+  color: #f8fffb;
+  background: transparent;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-align: left;
+}
+
+.status-menu button:hover,
+.status-menu button.is-active {
+  color: #102522;
+  background: #fff1b8;
+}
+
 .status-line {
   position: fixed;
   left: 46px;
@@ -312,10 +360,13 @@ button:disabled {
 }
 
 .settings-shell {
-  min-height: 100vh;
-  padding: 24px;
+  height: 100vh;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px;
   display: grid;
-  place-items: center;
+  align-items: start;
+  justify-items: center;
   background:
     linear-gradient(135deg, rgba(20, 184, 166, 0.22), transparent 44%),
     #f0fdfa;

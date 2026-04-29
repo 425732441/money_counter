@@ -79,6 +79,15 @@
         </nav>
       </section>
 
+      <div id="status-menu" class="status-menu" role="menu" aria-label="状态" hidden>
+        <button type="button" data-status="auto" role="menuitemradio">自动</button>
+        <button type="button" data-status="working" role="menuitemradio">开工</button>
+        <button type="button" data-status="fishing" role="menuitemradio">摸鱼</button>
+        <button type="button" data-status="lunch" role="menuitemradio">午休</button>
+        <button type="button" data-status="pause" role="menuitemradio">暂停</button>
+        <button type="button" data-status="offWork" role="menuitemradio">收工</button>
+      </div>
+
       <p id="desktop-status" class="status-line" aria-live="polite">正在启动桌面小工具。</p>
       <canvas id="share-card" width="900" height="480" aria-label="分享图预览"></canvas>
     </main>

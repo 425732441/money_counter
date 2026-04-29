@@ -172,7 +172,7 @@ fn open_settings_window_impl(app: &tauri::AppHandle) -> tauri::Result<()> {
 
     WebviewWindowBuilder::new(app, "settings", WebviewUrl::App("index.html".into()))
         .title("回血计数器设置")
-        .inner_size(720.0, 620.0)
+        .inner_size(720.0, 760.0)
         .min_inner_size(560.0, 520.0)
         .resizable(true)
         .center()

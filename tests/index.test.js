@@ -17,8 +17,15 @@ describe("phase 1 setup fields", () => {
       "lunch-end",
       "status-override",
       "cycle-status",
+      "status-menu",
     ]) {
       assert.match(html, new RegExp(`id="${id}"`));
+    }
+  });
+
+  it("uses short labels for the compact status menu", () => {
+    for (const label of ["自动", "开工", "摸鱼", "午休", "暂停", "收工"]) {
+      assert.match(html, new RegExp(`data-status="[^"]+"[^>]*>\\s*${label}\\s*</button>`));
     }
   });
 });

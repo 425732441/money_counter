@@ -71,6 +71,8 @@ const el = {
   closeSettings: document.querySelector("#close-settings"),
   sendNotification: document.querySelector("#send-notification"),
   cycleStatus: document.querySelector("#cycle-status"),
+  statusMenu: document.querySelector("#status-menu"),
+  statusMenuButtons: Array.from(document.querySelectorAll("#status-menu [data-status]")),
   togglePin: document.querySelector("#toggle-pin"),
   toggleAutostart: document.querySelector("#toggle-autostart"),
   copyCard: document.querySelector("#copy-card"),
@@ -90,6 +92,7 @@ let currentWindowLabel = "main";
 let currentWindow;
 let pinOnTop = true;
 let currentWidgetWidth = DEFAULT_WIDGET_WIDTH;
+let statusMenuOpen = false;
 let edgeState = {
   edge: null,
   hidden: false,
@@ -113,6 +116,8 @@ function setEdgeVisual(edge, hidden) {
 
   el.statusWidget.dataset.edge = edge || "";
   el.statusWidget.classList.toggle("is-edge-hidden", Boolean(hidden));
+  el.widgetView.classList.toggle("is-edge-hidden", Boolean(hidden));
+  if (hidden && statusMenuOpen) closeStatusMenu();
 }
 
 function setEdgeProgress(progress) {
@@ -176,6 +181,26 @@ async function applyResponsiveWindowSize() {
     minWidth: MIN_WIDGET_WIDTH,
     minHeight: WIDGET_HEIGHT,
   });
+}
+
+async function fitSettingsWindow() {
+  if (currentWindowLabel !== "settings") return;
+
+  const monitor = await getActiveMonitor();
+  const scaleFactor = await currentWindow.scaleFactor().catch(() => 1);
+  const workArea = monitor.workArea || monitor;
+  const workAreaWidth = Math.round(workArea.size.width / Math.max(1, scaleFactor));
+  const workAreaHeight = Math.round(workArea.size.height / Math.max(1, scaleFactor));
+  const contentHeight = Math.ceil(el.settingsView.scrollHeight || 720);
+  const width = Math.min(720, Math.max(560, workAreaWidth - 80));
+  const maxHeight = Math.max(520, workAreaHeight - 80);
+  const height = Math.min(maxHeight, Math.max(620, contentHeight));
+
+  await currentWindow.setSizeConstraints({
+    minWidth: 560,
+    minHeight: 520,
+  });
+  await currentWindow.setSize(new LogicalSize(width, height));
 }
 
 async function getWindowGeometry() {
@@ -409,34 +434,6 @@ function formatDuration(seconds) {
 function displayAmount(value, metrics) {
   if (settings.privacyMode === "real") return formatMoney(value);
   if (settings.privacyMode === "progress") {
-    return `进度 ${Math.round(getWorkMetrics().progress * 100)}%`;
-  }
-  if (settings.privacyMode === "alias") {
-    return `咖啡 +${Math.max(1, Math.round(value / 35))} 杯`;
-  }
-  const rounded = Math.floor(value / 10) * 10;
-  return `约 ${formatMoney(rounded)}+`;
-}
-
-function syncForm() {
-  el.monthlySalary.value = settings.monthlySalary;
-  el.workDays.value = settings.workDaysPerMonth;
-  el.dailyHours.value = settings.dailyHours;
-  el.privacyMode.value = settings.privacyMode;
-}
-
-function readForm() {
-  settings = {
-    monthlySalary: Number(el.monthlySalary.value || DEFAULT_SETTINGS.monthlySalary),
-    workDaysPerMonth: Number(el.workDays.value || DEFAULT_SETTINGS.workDaysPerMonth),
-    dailyHours: Number(el.dailyHours.value || DEFAULT_SETTINGS.dailyHours),
-    privacyMode: el.privacyMode.value,
-  };
-}
-
-function displayAmount(value, metrics) {
-  if (settings.privacyMode === "real") return formatMoney(value);
-  if (settings.privacyMode === "progress") {
     return `进度 ${Math.round((metrics?.progress || 0) * 100)}%`;
   }
   if (settings.privacyMode === "alias") {
@@ -448,6 +445,19 @@ function displayAmount(value, metrics) {
 
 function getStatusLabel(statusId) {
   return WORK_STATUSES[statusId]?.label || statusId || "自动";
+}
+
+function updateStatusMenuSelection(statusId = dayState.statusOverride || "auto") {
+  for (const button of el.statusMenuButtons) {
+    const active = button.dataset.status === statusId;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-checked", String(active));
+  }
+
+  const label = getStatusLabel(statusId);
+  el.cycleStatus.title = `状态：${label}`;
+  el.cycleStatus.setAttribute("aria-label", `状态：${label}`);
+  el.cycleStatus.setAttribute("aria-expanded", String(statusMenuOpen));
 }
 
 function syncForm() {
@@ -465,6 +475,7 @@ function syncForm() {
   el.lunchEnd.value = settings.lunchEnd;
   el.privacyMode.value = settings.privacyMode;
   el.statusOverride.value = dayState.statusOverride || "auto";
+  updateStatusMenuSelection();
 }
 
 function readForm() {
@@ -491,6 +502,16 @@ function readForm() {
   };
 }
 
+async function persistDayState({ force = false } = {}) {
+  if (!store) return;
+  const now = Date.now();
+  if (!force && now - lastDayStatePersistAt < 15000) return;
+
+  lastDayStatePersistAt = now;
+  await store.set(DAY_STATE_STORE_KEY, dayState);
+  if (force) await store.save();
+}
+
 function roundRect(ctx, x, y, width, height, radius) {
   ctx.beginPath();
   ctx.moveTo(x + radius, y);
@@ -499,57 +520,6 @@ function roundRect(ctx, x, y, width, height, radius) {
   ctx.arcTo(x, y + height, x, y, radius);
   ctx.arcTo(x, y, x + width, y, radius);
   ctx.closePath();
-}
-
-function renderCard(metrics) {
-  const canvas = el.shareCard;
-  const ctx = canvas.getContext("2d");
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  ctx.fillStyle = "#f0fdfa";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  ctx.fillStyle = "#102522";
-  roundRect(ctx, 40, 40, 820, 400, 18);
-  ctx.fill();
-
-  ctx.fillStyle = "#14b8a6";
-  ctx.fillRect(40, 365, 820 * metrics.progress, 18);
-  ctx.fillStyle = "#ffb020";
-  ctx.beginPath();
-  ctx.arc(760, 128, 48, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.strokeStyle = "#6b4300";
-  ctx.lineWidth = 5;
-  ctx.beginPath();
-  ctx.arc(760, 128, 31, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(742, 132);
-  ctx.quadraticCurveTo(760, 146, 778, 132);
-  ctx.stroke();
-
-  ctx.fillStyle = "#a7f3d0";
-  ctx.font = "700 28px Segoe UI, sans-serif";
-  ctx.fillText("今日打工回血战报", 84, 112);
-
-  ctx.fillStyle = "#fff1b8";
-  ctx.font = "800 76px Segoe UI, sans-serif";
-  ctx.fillText(displayAmount(metrics.earned), 84, 222);
-
-  ctx.fillStyle = "#ffffff";
-  ctx.font = "700 28px Segoe UI, sans-serif";
-  ctx.fillText(`每秒到账 ${formatMoney(metrics.rate)}/s`, 88, 292);
-  ctx.fillText(`工作进度 ${Math.round(metrics.progress * 100)}%`, 88, 334);
-
-  ctx.fillStyle = "#ffb020";
-  ctx.font = "700 24px Segoe UI, sans-serif";
-  ctx.fillText("老板不在，回血照来。", 88, 416);
-
-  ctx.fillStyle = "#99f6e4";
-  ctx.font = "20px Segoe UI, sans-serif";
-  ctx.fillText("Money Counter Spike", 622, 416);
 }
 
 function renderCard(metrics) {
@@ -604,9 +574,9 @@ function renderCard(metrics) {
 }
 
 async function updateTrayStatus(metrics) {
-  const text = `今日回血 ${displayAmount(metrics.earned)} | ${formatMoney(metrics.rate)}/s | ${Math.round(
+  const text = `今日回血 ${displayAmount(metrics.earned, metrics)} | ${formatMoney(metrics.rate)}/s | ${Math.round(
     metrics.progress * 100,
-  )}%`;
+  )}% | ${metrics.effectiveStatus.label}`;
 
   try {
     await invoke("update_tray_status", {
@@ -620,18 +590,25 @@ async function updateTrayStatus(metrics) {
 }
 
 function render() {
-  const metrics = getWorkMetrics();
-  el.earned.textContent = displayAmount(metrics.earned);
+  dayState = advanceDayState(dayState, settings);
+  const metrics = getCoreWorkMetrics(settings, dayState);
+  el.earned.textContent = displayAmount(metrics.earned, metrics);
   el.rate.textContent = `${formatMoney(metrics.rate)}/s`;
   el.progress.textContent = `${Math.round(metrics.progress * 100)}%`;
   el.progressBar.style.width = `${Math.max(2, Math.round(metrics.progress * 100))}%`;
   setEdgeProgress(metrics.progress);
+  setStatus(
+    `状态 ${metrics.effectiveStatus.label} · 预计 ${formatMoney(metrics.estimatedToday)} · 已工作 ${formatDuration(
+      metrics.paidSeconds,
+    )}`,
+  );
   renderCard(metrics);
 
   if (currentWindowLabel === "main") {
     updateTrayStatus(metrics);
+    persistDayState();
     currentWindow.setTitle(
-      `回血 ${displayAmount(metrics.earned)} | ${formatMoney(metrics.rate)}/s | ${Math.round(
+      `回血 ${displayAmount(metrics.earned, metrics)} | ${formatMoney(metrics.rate)}/s | ${Math.round(
         metrics.progress * 100,
       )}%`,
     );
@@ -644,6 +621,10 @@ async function reloadSettings() {
     ...DEFAULT_SETTINGS,
     ...((await store.get("settings")) || {}),
   };
+  dayState = {
+    ...createInitialDayState(),
+    ...((await store.get(DAY_STATE_STORE_KEY)) || {}),
+  };
   syncForm();
   render();
 }
@@ -651,6 +632,7 @@ async function reloadSettings() {
 async function persistSettings() {
   readForm();
   await store.set("settings", settings);
+  await store.set(DAY_STATE_STORE_KEY, dayState);
   await store.save();
   await emitTo("main", "settings-changed");
   setStatus("设置已保存。主窗口会继续实时刷新。", "settings");
@@ -659,8 +641,10 @@ async function persistSettings() {
 
 async function clearSettings() {
   settings = { ...DEFAULT_SETTINGS };
+  dayState = createInitialDayState();
   await store.clear();
   await store.set(PIN_STORE_KEY, pinOnTop);
+  await store.set(DAY_STATE_STORE_KEY, dayState);
   await store.save();
   await emitTo("main", "settings-changed");
   syncForm();
@@ -760,6 +744,83 @@ async function closeSettings() {
   await currentWindow.close();
 }
 
+async function setStatusMenuWindowOpen(open) {
+  if (currentWindowLabel !== "main" || edgeState.hidden) return;
+
+  const width = currentWidgetWidth;
+  const height = open ? WIDGET_HEIGHT + 176 : WIDGET_HEIGHT;
+
+  try {
+    await currentWindow.setSizeConstraints({
+      minWidth: MIN_WIDGET_WIDTH,
+      minHeight: WIDGET_HEIGHT,
+    });
+
+    if (open) {
+      const { position, monitor, scaleFactor } = await getWindowGeometry();
+      const workArea = monitor.workArea || monitor;
+      const physicalHeight = Math.round(height * Math.max(1, scaleFactor));
+      const workBottom = workArea.position.y + workArea.size.height;
+      if (position.y + physicalHeight > workBottom) {
+        const nextY = Math.max(workArea.position.y, workBottom - physicalHeight);
+        await currentWindow.setPosition(new PhysicalPosition(position.x, nextY));
+      }
+    }
+
+    await currentWindow.setSize(new LogicalSize(width, height));
+  } catch (error) {
+    console.warn("status menu resize failed", error);
+  }
+}
+
+async function closeStatusMenu() {
+  if (!statusMenuOpen) return;
+
+  statusMenuOpen = false;
+  el.statusMenu.hidden = true;
+  el.widgetView.classList.remove("has-status-menu");
+  updateStatusMenuSelection();
+  await setStatusMenuWindowOpen(false);
+}
+
+async function openStatusMenu(event) {
+  event?.stopPropagation();
+  if (currentWindowLabel !== "main" || edgeState.hidden) return;
+
+  clearEdgeTimers();
+  statusMenuOpen = true;
+  edgeState.suppressAutoHideUntil = Date.now() + 1400;
+  el.statusMenu.hidden = false;
+  el.widgetView.classList.add("has-status-menu");
+  updateStatusMenuSelection();
+  await setStatusMenuWindowOpen(true);
+}
+
+async function toggleStatusMenu(event) {
+  event?.stopPropagation();
+  if (statusMenuOpen) {
+    await closeStatusMenu();
+  } else {
+    await openStatusMenu(event);
+  }
+}
+
+async function setStatusOverride(value) {
+  dayState = advanceDayState(dayState, settings);
+  dayState = {
+    ...dayState,
+    statusOverride: value || "auto",
+    lastUpdateAt: new Date().toISOString(),
+  };
+  syncForm();
+  await persistDayState({ force: true });
+  render();
+}
+
+async function cycleStatusOverride(event) {
+  await toggleStatusMenu(event);
+}
+
 async function startDrag(event) {
   if (!shouldStartWindowDrag(event)) return;
   event.preventDefault();
@@ -783,6 +844,7 @@ async function boot() {
   currentWindow = getCurrentWindow();
   currentWindowLabel = currentWindow.label;
   const isSettingsWindow = currentWindowLabel === "settings";
+  document.body.classList.toggle("is-settings-window", isSettingsWindow);
   el.widgetView.hidden = isSettingsWindow;
   el.settingsView.hidden = !isSettingsWindow;
 
@@ -791,6 +853,10 @@ async function boot() {
     ...DEFAULT_SETTINGS,
     ...((await store.get("settings")) || {}),
   };
+  dayState = {
+    ...createInitialDayState(),
+    ...((await store.get(DAY_STATE_STORE_KEY)) || {}),
+  };
   pinOnTop = (await store.get(PIN_STORE_KEY)) ?? true;
 
   syncForm();
@@ -798,6 +864,7 @@ async function boot() {
   await refreshAutostart();
 
   if (isSettingsWindow) {
+    await fitSettingsWindow();
     setStatus("设置只保存在本机。", "settings");
   } else {
     await applyWindowChrome();
@@ -814,6 +881,7 @@ el.closeSettings.addEventListener("click", closeSettings);
 el.saveSettings.addEventListener("click", persistSettings);
 el.clearSettings.addEventListener("click", clearSettings);
 el.sendNotification.addEventListener("click", notify);
+el.cycleStatus.addEventListener("click", cycleStatusOverride);
 el.togglePin.addEventListener("click", togglePin);
 el.toggleAutostart.addEventListener("click", toggleAutostart);
 el.copyCard.addEventListener("click", copyCard);
@@ -821,12 +889,46 @@ el.saveCard.addEventListener("click", saveCard);
 el.hideWindow.addEventListener("click", () => invoke("hide_main_window"));
 el.widgetView.addEventListener("pointerdown", startDrag);
 
-for (const input of [el.monthlySalary, el.workDays, el.dailyHours, el.privacyMode]) {
+for (const button of el.statusMenuButtons) {
+  button.addEventListener("click", async (event) => {
+    event.stopPropagation();
+    await setStatusOverride(button.dataset.status);
+    await closeStatusMenu();
+  });
+}
+
+document.addEventListener("pointerdown", (event) => {
+  if (!statusMenuOpen) return;
+  if (el.statusMenu.contains(event.target) || el.cycleStatus.contains(event.target)) return;
+  closeStatusMenu();
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeStatusMenu();
+});
+
+for (const input of [
+  el.incomeMode,
+  el.incomeAmount,
+  el.workDays,
+  el.dailyHours,
+  el.workMode,
+  el.workdayMode,
+  el.startTime,
+  el.endTime,
+  el.lunchStart,
+  el.lunchEnd,
+  el.privacyMode,
+]) {
   input.addEventListener("input", () => {
     readForm();
     render();
   });
 }
+
+el.statusOverride.addEventListener("change", () => {
+  setStatusOverride(el.statusOverride.value);
+});
 
 setInterval(render, 1000);
 setInterval(keepPinnedVisible, 1200);

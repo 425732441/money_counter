@@ -5,6 +5,7 @@ import {
   DEFAULT_WORK_SETTINGS,
   advanceDayState,
   calculateIncomeRate,
+  createInitialDayState,
   getAutoStatus,
   getDateKey,
   getPaidSecondsBetween,
@@ -73,6 +74,35 @@ describe("standard work schedule", () => {
 });
 
 describe("day state progression", () => {
+  it("auto mode counts payable time that elapsed before the app opened", () => {
+    const openedLate = createInitialDayState(at("10:30:00"));
+
+    const next = advanceDayState(openedLate, DEFAULT_WORK_SETTINGS, at("10:30:00"));
+
+    assert.equal(next.paidSeconds, 1.5 * 3600);
+    assert.equal(next.effectiveStatus.id, "working");
+  });
+
+  it("auto mode recomputes elapsed time after schedule settings change", () => {
+    const previous = {
+      dateKey: getDateKey(at("10:30:00")),
+      paidSeconds: 0,
+      fishingSeconds: 0,
+      lastUpdateAt: at("10:30:00").toISOString(),
+      statusOverride: "auto",
+    };
+    const changedSettings = {
+      ...DEFAULT_WORK_SETTINGS,
+      startTime: "08:30",
+      lunchStart: "12:00",
+      lunchEnd: "13:00",
+    };
+
+    const next = advanceDayState(previous, changedSettings, at("10:30:00"));
+
+    assert.equal(next.paidSeconds, 2 * 3600);
+  });
+
   it("manual fishing counts as paid time and fishing time", () => {
     const previous = {
       dateKey: getDateKey(at("09:00:00")),
@@ -95,14 +125,15 @@ describe("day state progression", () => {
       paidSeconds: 3600,
       fishingSeconds: 600,
       lastUpdateAt: new Date("2026-04-28T18:00:00").toISOString(),
-      statusOverride: "auto",
+      statusOverride: "offWork",
     };
 
     const next = advanceDayState(previous, DEFAULT_WORK_SETTINGS, at("09:01:00"));
 
     assert.equal(next.dateKey, "2026-04-29");
-    assert.equal(next.paidSeconds, 0);
+    assert.equal(next.paidSeconds, 60);
     assert.equal(next.fishingSeconds, 0);
+    assert.equal(next.statusOverride, "auto");
   });
 
   it("flexible work mode stops auto counting after the daily target", () => {

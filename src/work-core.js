@@ -56,6 +56,12 @@ function dateAtMinutes(date, minutes) {
   return result;
 }
 
+function startOfDay(date) {
+  const result = new Date(date);
+  result.setHours(0, 0, 0, 0);
+  return result;
+}
+
 function secondsBetween(start, end) {
   return Math.max(0, (end.getTime() - start.getTime()) / 1000);
 }
@@ -141,6 +147,19 @@ export function getPaidSecondsBetween(startDate, endDate, settings = {}) {
   return total;
 }
 
+function getAutoPaidSecondsUntil(nowDate = new Date(), settings = {}) {
+  const normalized = normalizeSettings(settings);
+  const now = new Date(nowDate);
+  if (!isWorkingDay(now, normalized)) return 0;
+
+  if (normalized.workMode === "flexible") {
+    const start = dateAtMinutes(now, parseTimeToMinutes(normalized.startTime));
+    return Math.min(normalized.dailyHours * 3600, secondsBetween(start, now));
+  }
+
+  return getPaidSecondsBetween(startOfDay(now), now, normalized);
+}
+
 export function getAutoStatus(nowDate = new Date(), settings = {}, dayState = {}) {
   const normalized = normalizeSettings(settings);
   const now = new Date(nowDate);
@@ -190,18 +209,17 @@ export function advanceDayState(previousState, settings = {}, nowDate = new Date
   const previous =
     previousState && previousState.dateKey === dateKey
       ? previousState
-      : createInitialDayState(now, previousState?.statusOverride || "auto");
+      : createInitialDayState(now, "auto");
 
   const statusOverride = previous.statusOverride || "auto";
   const lastUpdate = new Date(previous.lastUpdateAt || now);
   const intervalStart = getDateKey(lastUpdate) === dateKey ? lastUpdate : now;
-  const elapsedSeconds =
+  const elapsedSeconds = getManualPaidSecondsBetween(intervalStart, now, statusOverride);
+  const fishingSeconds = statusOverride === "fishing" ? secondsBetween(intervalStart, now) : 0;
+  const paidSeconds =
     statusOverride === "auto"
-      ? getPaidSecondsBetween(intervalStart, now, settings)
-      : getManualPaidSecondsBetween(intervalStart, now, statusOverride);
-  const fishingSeconds =
-    statusOverride === "fishing" ? secondsBetween(intervalStart, now) : 0;
-  const paidSeconds = Math.max(0, Number(previous.paidSeconds || 0) + elapsedSeconds);
+      ? getAutoPaidSecondsUntil(now, settings)
+      : Math.max(0, Number(previous.paidSeconds || 0) + elapsedSeconds);
   const next = {
     ...previous,
     dateKey,
