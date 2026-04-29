@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>回血计数器 Spike</title>
+  </head>
+  <body>
+    <main id="widget-view" class="widget-shell">
+      <section id="status-widget" class="status-widget" aria-label="回血计数器实时状态">
+        <div class="coin-mark" aria-hidden="true">
+          <svg viewBox="0 0 48 48" role="img">
+            <circle cx="24" cy="24" r="20" />
+            <path d="M15 25c5 6 13 6 18 0" />
+            <path d="M17 18h.01M31 18h.01" />
+            <path d="M24 9v7M24 32v7" />
+          </svg>
+        </div>
+
+        <div class="metric primary">
+          <span>今日回血</span>
+          <strong id="earned">约 ¥0+</strong>
+        </div>
+
+        <div class="metric">
+          <span>到账/s</span>
+          <strong id="rate">¥0.00/s</strong>
+        </div>
+
+        <div class="metric">
+          <span>进度</span>
+          <strong id="progress">0%</strong>
+        </div>
+
+        <div class="spark" aria-hidden="true">
+          <i id="progress-bar"></i>
+        </div>
+
+        <nav class="widget-actions" aria-label="桌面操作">
+          <button id="toggle-pin" class="icon-button is-on" type="button" aria-label="取消置顶" title="取消置顶" aria-pressed="true">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m14.5 4 5.5 5.5" />
+              <path d="M15 9.5 8.5 16l-3 3-.5-3.5 3-3L14.5 6 18 9.5Z" />
+              <path d="m9 15 6 6" />
+            </svg>
+          </button>
+          <button id="cycle-status" class="icon-button" type="button" aria-label="切换状态" title="切换状态">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 12a8 8 0 0 1 13.5-5.8" />
+              <path d="M17 3v4h-4" />
+              <path d="M20 12a8 8 0 0 1-13.5 5.8" />
+              <path d="M7 21v-4h4" />
+            </svg>
+          </button>
+          <button id="open-settings" class="icon-button" type="button" aria-label="打开设置" title="设置">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z" />
+              <path d="M19 12a7.2 7.2 0 0 0-.1-1l2-1.5-2-3.4-2.4 1a8.2 8.2 0 0 0-1.8-1L14.4 3h-4.8l-.3 3.1a8.2 8.2 0 0 0-1.8 1l-2.4-1-2 3.4 2 1.5a7.2 7.2 0 0 0 0 2l-2 1.5 2 3.4 2.4-1a8.2 8.2 0 0 0 1.8 1l.3 3.1h4.8l.3-3.1a8.2 8.2 0 0 0 1.8-1l2.4 1 2-3.4-2-1.5c.1-.3.1-.7.1-1Z" />
+            </svg>
+          </button>
+          <button id="copy-card" class="icon-button" type="button" aria-label="复制分享图" title="复制分享图">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="8" y="8" width="11" height="11" rx="2" />
+              <path d="M5 15H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1" />
+            </svg>
+          </button>
+          <button id="save-card" class="icon-button" type="button" aria-label="保存分享图" title="保存分享图">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3v12" />
+              <path d="m7 10 5 5 5-5" />
+              <path d="M5 21h14" />
+            </svg>
+          </button>
+          <button id="hide-window" class="icon-button soft" type="button" aria-label="隐藏到托盘" title="隐藏到托盘">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M5 12h14" />
+            </svg>
+          </button>
+        </nav>
+      </section>
+
+      <p id="desktop-status" class="status-line" aria-live="polite">正在启动桌面小工具。</p>
+      <canvas id="share-card" width="900" height="480" aria-label="分享图预览"></canvas>
+    </main>
+
+    <main id="settings-view" class="settings-shell" hidden>
+      <section class="settings-panel" aria-labelledby="settings-title">
+        <header class="settings-header">
+          <div>
+            <p class="eyebrow">本地离线配置</p>
+            <h1 id="settings-title">回血计数器设置</h1>
+          </div>
+          <button id="close-settings" class="icon-button soft" type="button" aria-label="关闭设置" title="关闭">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </header>
+
+        <div class="form-grid">
+          <label>
+            <span>收入模式</span>
+            <select id="income-mode">
+              <option value="monthly">月薪</option>
+              <option value="daily">日薪</option>
+              <option value="hourly">时薪</option>
+            </select>
+          </label>
+          <label>
+            <span>收入金额</span>
+            <input id="income-amount" type="number" min="0" step="100" inputmode="decimal" />
+          </label>
+          <label>
+            <span>每月工作日</span>
+            <input id="work-days" type="number" min="1" step="0.5" inputmode="decimal" />
+          </label>
+          <label>
+            <span>每日目标小时</span>
+            <input id="daily-hours" type="number" min="1" max="16" step="0.5" inputmode="decimal" />
+          </label>
+          <label>
+            <span>工时模式</span>
+            <select id="work-mode">
+              <option value="standard">标准工时</option>
+              <option value="flexible">弹性目标</option>
+            </select>
+          </label>
+          <label>
+            <span>工作日规则</span>
+            <select id="workday-mode">
+              <option value="weekdays">双休</option>
+              <option value="singleRest">单休</option>
+              <option value="all">每天</option>
+            </select>
+          </label>
+          <label>
+            <span>上班时间</span>
+            <input id="start-time" type="time" />
+          </label>
+          <label>
+            <span>下班时间</span>
+            <input id="end-time" type="time" />
+          </label>
+          <label>
+            <span>午休开始</span>
+            <input id="lunch-start" type="time" />
+          </label>
+          <label>
+            <span>午休结束</span>
+            <input id="lunch-end" type="time" />
+          </label>
+          <label>
+            <span>隐私显示</span>
+            <select id="privacy-mode">
+              <option value="blurred">模糊金额</option>
+              <option value="real">真实金额</option>
+              <option value="progress">进度百分比</option>
+              <option value="alias">暗号模式</option>
+            </select>
+          </label>
+          <label>
+            <span>当前状态</span>
+            <select id="status-override">
+              <option value="auto">自动</option>
+              <option value="working">开工</option>
+              <option value="fishing">摸鱼</option>
+              <option value="lunch">午休</option>
+              <option value="pause">暂停</option>
+              <option value="offWork">收工</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="settings-actions">
+          <button id="save-settings" class="primary-button" type="button">保存设置</button>
+          <button id="send-notification" class="secondary-button" type="button">发送测试通知</button>
+          <button id="toggle-autostart" class="secondary-button" type="button">开机自启：检测中</button>
+          <button id="clear-settings" class="danger-button" type="button">清空本地设置</button>
+        </div>
+
+        <p id="settings-status" class="settings-status" aria-live="polite">设置只保存在本机。</p>
+      </section>
+    </main>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

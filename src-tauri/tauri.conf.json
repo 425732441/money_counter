@@ -1,0 +1,40 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Money Counter Spike",
+  "version": "0.0.1",
+  "identifier": "com.moneycounter.spike",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://127.0.0.1:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "回血计数器 Spike",
+        "width": 520,
+        "height": 60,
+        "minWidth": 480,
+        "minHeight": 60,
+        "resizable": false,
+        "center": true,
+        "visible": true,
+        "decorations": false,
+        "skipTaskbar": false,
+        "transparent": false,
+        "shadow": false,
+        "backgroundColor": "#102522",
+        "alwaysOnTop": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"]
+  }
+}
