@@ -2,6 +2,17 @@ import "./styles.css";
 
 import { shouldStartWindowDrag } from "./drag.js";
 import {
+  DEFAULT_REMINDER_SETTINGS,
+  createInitialReminderState,
+  getDueReminder,
+} from "./reminder-core.js";
+import {
+  getNotificationBlockMessage,
+  getNotificationSentMessage,
+  getNotificationStatusTarget,
+  shouldShowNotificationSettingsLink,
+} from "./notification-core.js";
+import {
   DEFAULT_WORK_SETTINGS,
   WORK_STATUSES,
   advanceDayState,
@@ -38,12 +49,14 @@ import { load } from "@tauri-apps/plugin-store";
 
 const DEFAULT_SETTINGS = {
   ...DEFAULT_WORK_SETTINGS,
+  ...DEFAULT_REMINDER_SETTINGS,
   workDaysPerMonth: 21.75,
   privacyMode: "blurred",
 };
 
 const PIN_STORE_KEY = "pinOnTop";
 const DAY_STATE_STORE_KEY = "dayState";
+const REMINDER_STATE_STORE_KEY = "reminderState";
 
 const el = {
   widgetView: document.querySelector("#widget-view"),
@@ -65,11 +78,18 @@ const el = {
   lunchEnd: document.querySelector("#lunch-end"),
   privacyMode: document.querySelector("#privacy-mode"),
   statusOverride: document.querySelector("#status-override"),
+  reminderMode: document.querySelector("#reminder-mode"),
+  scheduleReminders: document.querySelector("#schedule-reminders"),
+  breakReminders: document.querySelector("#break-reminders"),
+  reminderInterval: document.querySelector("#reminder-interval"),
+  quietStart: document.querySelector("#quiet-start"),
+  quietEnd: document.querySelector("#quiet-end"),
   saveSettings: document.querySelector("#save-settings"),
   clearSettings: document.querySelector("#clear-settings"),
   openSettings: document.querySelector("#open-settings"),
   closeSettings: document.querySelector("#close-settings"),
   sendNotification: document.querySelector("#send-notification"),
+  openNotificationSettings: document.querySelector("#open-notification-settings"),
   cycleStatus: document.querySelector("#cycle-status"),
   statusMenu: document.querySelector("#status-menu"),
   statusMenuButtons: Array.from(document.querySelectorAll("#status-menu [data-status]")),
@@ -86,7 +106,9 @@ const el = {
 let store;
 let settings = { ...DEFAULT_SETTINGS };
 let dayState = createInitialDayState();
+let reminderState = createInitialReminderState();
 let lastDayStatePersistAt = 0;
+let lastReminderStatePersistAt = 0;
 let autostartEnabled = false;
 let currentWindowLabel = "main";
 let currentWindow;
@@ -106,9 +128,12 @@ let edgeState = {
   ignoreMovedUntil: 0,
 };
 
-function setStatus(message, target = "desktop") {
+function setStatus(message, target = "desktop", options = {}) {
   const node = target === "settings" ? el.settingsStatus : el.desktopStatus;
   if (node) node.textContent = message;
+  if (target === "settings" && el.openNotificationSettings) {
+    el.openNotificationSettings.hidden = !options.showNotificationSettingsLink;
+  }
 }
 
 function setEdgeVisual(edge, hidden) {
@@ -475,6 +500,12 @@ function syncForm() {
   el.lunchEnd.value = settings.lunchEnd;
   el.privacyMode.value = settings.privacyMode;
   el.statusOverride.value = dayState.statusOverride || "auto";
+  el.reminderMode.value = settings.remindersEnabled ? "on" : "off";
+  el.scheduleReminders.value = settings.scheduleRemindersEnabled ? "on" : "off";
+  el.breakReminders.value = settings.breakRemindersEnabled ? "on" : "off";
+  el.reminderInterval.value = settings.reminderIntervalMinutes;
+  el.quietStart.value = settings.quietStart;
+  el.quietEnd.value = settings.quietEnd;
   updateStatusMenuSelection();
 }
 
@@ -494,6 +525,12 @@ function readForm() {
     lunchStart: el.lunchStart.value || DEFAULT_SETTINGS.lunchStart,
     lunchEnd: el.lunchEnd.value || DEFAULT_SETTINGS.lunchEnd,
     privacyMode: el.privacyMode.value,
+    remindersEnabled: el.reminderMode.value === "on",
+    scheduleRemindersEnabled: el.scheduleReminders.value === "on",
+    breakRemindersEnabled: el.breakReminders.value === "on",
+    reminderIntervalMinutes: Number(el.reminderInterval.value || DEFAULT_SETTINGS.reminderIntervalMinutes),
+    quietStart: el.quietStart.value || DEFAULT_SETTINGS.quietStart,
+    quietEnd: el.quietEnd.value || DEFAULT_SETTINGS.quietEnd,
   };
 
   dayState = {
@@ -509,6 +546,16 @@ async function persistDayState({ force = false } = {}) {
 
   lastDayStatePersistAt = now;
   await store.set(DAY_STATE_STORE_KEY, dayState);
+  if (force) await store.save();
+}
+
+async function persistReminderState({ force = false } = {}) {
+  if (!store) return;
+  const now = Date.now();
+  if (!force && now - lastReminderStatePersistAt < 15000) return;
+
+  lastReminderStatePersistAt = now;
+  await store.set(REMINDER_STATE_STORE_KEY, reminderState);
   if (force) await store.save();
 }
 
@@ -589,6 +636,38 @@ async function updateTrayStatus(metrics) {
   }
 }
 
+async function maybeSendReminder() {
+  if (currentWindowLabel !== "main") return;
+
+  const result = getDueReminder({
+    now: new Date(),
+    settings,
+    workSettings: settings,
+    dayState,
+    reminderState,
+  });
+
+  reminderState = result.nextState;
+  if (!result.reminder) {
+    persistReminderState();
+    return;
+  }
+
+  persistReminderState({ force: true });
+  try {
+    const notificationResult = await sendCheckedNativeNotification({
+      title: result.reminder.title,
+      body: result.reminder.body,
+    });
+    setStatus(
+      notificationResult.sent ? `提醒：${result.reminder.title}` : notificationResult.message,
+    );
+  } catch (error) {
+    console.warn("send reminder failed", error);
+    setStatus(`提醒发送失败：${error}`);
+  }
+}
+
 function render() {
   dayState = advanceDayState(dayState, settings);
   const metrics = getCoreWorkMetrics(settings, dayState);
@@ -607,6 +686,7 @@ function render() {
   if (currentWindowLabel === "main") {
     updateTrayStatus(metrics);
     persistDayState();
+    maybeSendReminder();
     currentWindow.setTitle(
       `回血 ${displayAmount(metrics.earned, metrics)} | ${formatMoney(metrics.rate)}/s | ${Math.round(
         metrics.progress * 100,
@@ -625,6 +705,10 @@ async function reloadSettings() {
     ...createInitialDayState(),
     ...((await store.get(DAY_STATE_STORE_KEY)) || {}),
   };
+  reminderState = {
+    ...createInitialReminderState(),
+    ...((await store.get(REMINDER_STATE_STORE_KEY)) || {}),
+  };
   syncForm();
   render();
 }
@@ -633,6 +717,7 @@ async function persistSettings() {
   readForm();
   await store.set("settings", settings);
   await store.set(DAY_STATE_STORE_KEY, dayState);
+  await store.set(REMINDER_STATE_STORE_KEY, reminderState);
   await store.save();
   await emitTo("main", "settings-changed");
   setStatus("设置已保存。主窗口会继续实时刷新。", "settings");
@@ -642,9 +727,11 @@ async function persistSettings() {
 async function clearSettings() {
   settings = { ...DEFAULT_SETTINGS };
   dayState = createInitialDayState();
+  reminderState = createInitialReminderState();
   await store.clear();
   await store.set(PIN_STORE_KEY, pinOnTop);
   await store.set(DAY_STATE_STORE_KEY, dayState);
+  await store.set(REMINDER_STATE_STORE_KEY, reminderState);
   await store.save();
   await emitTo("main", "settings-changed");
   syncForm();
@@ -672,16 +759,57 @@ async function toggleAutostart() {
   }
 }
 
-async function notify() {
-  el.sendNotification.disabled = true;
+async function sendCheckedNativeNotification({ title, body }) {
+  const diagnostics = await invoke("get_notification_diagnostics");
+  const blockMessage = getNotificationBlockMessage(diagnostics);
+  if (blockMessage) {
+    return {
+      sent: false,
+      message: blockMessage,
+      diagnostics,
+      showSettingsLink: shouldShowNotificationSettingsLink(diagnostics),
+    };
+  }
+
+  const sentDiagnostics = await invoke("send_native_notification", { title, body });
+  return {
+    sent: true,
+    message: getNotificationSentMessage(sentDiagnostics || diagnostics),
+    diagnostics: sentDiagnostics || diagnostics,
+    showSettingsLink: false,
+  };
+}
+
+async function openNotificationSettings() {
+  el.openNotificationSettings.disabled = true;
   try {
-    await invoke("send_native_notification", {
+    await invoke("open_notification_settings");
+    setStatus("已打开 Windows 通知设置。", "settings", {
+      showNotificationSettingsLink: true,
+    });
+  } catch (error) {
+    setStatus(`无法打开通知设置：${error}`, "settings", {
+      showNotificationSettingsLink: true,
+    });
+  } finally {
+    el.openNotificationSettings.disabled = false;
+  }
+}
+
+async function notify() {
+  const target = getNotificationStatusTarget(currentWindowLabel);
+  el.sendNotification.disabled = true;
+  setStatus("正在检查系统通知。", target);
+  try {
+    const result = await sendCheckedNativeNotification({
       title: "回了点血",
       body: `当前显示：${el.earned.textContent}`,
     });
-    setStatus("已发送系统通知。");
+    setStatus(result.message, target, {
+      showNotificationSettingsLink: result.showSettingsLink,
+    });
   } catch (error) {
-    setStatus(`通知发送失败：${error}`);
+    setStatus(`通知发送失败：${error}`, target);
   } finally {
     el.sendNotification.disabled = false;
   }
@@ -857,6 +985,10 @@ async function boot() {
     ...createInitialDayState(),
     ...((await store.get(DAY_STATE_STORE_KEY)) || {}),
   };
+  reminderState = {
+    ...createInitialReminderState(),
+    ...((await store.get(REMINDER_STATE_STORE_KEY)) || {}),
+  };
   pinOnTop = (await store.get(PIN_STORE_KEY)) ?? true;
 
   syncForm();
@@ -881,6 +1013,7 @@ el.closeSettings.addEventListener("click", closeSettings);
 el.saveSettings.addEventListener("click", persistSettings);
 el.clearSettings.addEventListener("click", clearSettings);
 el.sendNotification.addEventListener("click", notify);
+el.openNotificationSettings.addEventListener("click", openNotificationSettings);
 el.cycleStatus.addEventListener("click", cycleStatusOverride);
 el.togglePin.addEventListener("click", togglePin);
 el.toggleAutostart.addEventListener("click", toggleAutostart);
@@ -919,6 +1052,12 @@ for (const input of [
   el.lunchStart,
   el.lunchEnd,
   el.privacyMode,
+  el.reminderMode,
+  el.scheduleReminders,
+  el.breakReminders,
+  el.reminderInterval,
+  el.quietStart,
+  el.quietEnd,
 ]) {
   input.addEventListener("input", () => {
     readForm();

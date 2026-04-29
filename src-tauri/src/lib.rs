@@ -1,5 +1,11 @@
-use std::{f32::consts::PI, fs, path::PathBuf};
+use std::{
+    f32::consts::PI,
+    fs,
+    path::{Path, PathBuf},
+    process::Command,
+};
 
+use serde::Serialize;
 use tauri::{
     image::Image,
     menu::{Menu, MenuItem},
@@ -7,6 +13,24 @@ use tauri::{
     Manager, WebviewUrl, WebviewWindowBuilder,
 };
 use tauri_plugin_notification::NotificationExt;
+
+const POWERSHELL_APP_ID: &str =
+    r"{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\WindowsPowerShell\v1.0\powershell.exe";
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct NotificationAppIdentity {
+    app_id: String,
+    source: &'static str,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct NotificationDiagnostics {
+    toast_enabled: Option<bool>,
+    app_enabled: Option<bool>,
+    app_id: String,
+    app_id_source: String,
+}
 
 fn tray_icon_rgba(progress: f64, intensity: u32) -> Vec<u8> {
     let width = 32;
@@ -207,18 +231,130 @@ fn update_tray_status(
     Ok(())
 }
 
+fn notification_app_identity_for_exe(identifier: &str, exe: &Path) -> NotificationAppIdentity {
+    let exe_dir = exe
+        .parent()
+        .and_then(|path| path.to_str())
+        .unwrap_or_default()
+        .replace('/', "\\");
+    let is_dev_build =
+        exe_dir.ends_with(r"\target\debug") || exe_dir.ends_with(r"\target\release");
+
+    if is_dev_build {
+        NotificationAppIdentity {
+            app_id: POWERSHELL_APP_ID.to_string(),
+            source: "development",
+        }
+    } else {
+        NotificationAppIdentity {
+            app_id: identifier.to_string(),
+            source: "application",
+        }
+    }
+}
+
+fn notification_app_identity(app: &tauri::AppHandle) -> NotificationAppIdentity {
+    match tauri::utils::platform::current_exe() {
+        Ok(exe) => notification_app_identity_for_exe(&app.config().identifier, &exe),
+        Err(_) => NotificationAppIdentity {
+            app_id: app.config().identifier.clone(),
+            source: "application",
+        },
+    }
+}
+
+#[cfg(windows)]
+fn read_hkcu_dword(path: &str, value: &str) -> Option<u32> {
+    use winreg::{enums::HKEY_CURRENT_USER, RegKey};
+
+    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    hkcu.open_subkey(path).ok()?.get_value(value).ok()
+}
+
+#[cfg(not(windows))]
+fn read_hkcu_dword(_path: &str, _value: &str) -> Option<u32> {
+    None
+}
+
+fn dword_enabled(value: Option<u32>) -> Option<bool> {
+    value.map(|raw| raw != 0)
+}
+
+fn notification_diagnostics(app: &tauri::AppHandle) -> NotificationDiagnostics {
+    let identity = notification_app_identity(app);
+    let app_settings_path = format!(
+        r"Software\Microsoft\Windows\CurrentVersion\Notifications\Settings\{}",
+        identity.app_id
+    );
+
+    NotificationDiagnostics {
+        toast_enabled: dword_enabled(read_hkcu_dword(
+            r"Software\Microsoft\Windows\CurrentVersion\PushNotifications",
+            "ToastEnabled",
+        )),
+        app_enabled: dword_enabled(read_hkcu_dword(&app_settings_path, "Enabled")),
+        app_id: identity.app_id,
+        app_id_source: identity.source.to_string(),
+    }
+}
+
+fn notification_block_message(diagnostics: &NotificationDiagnostics) -> Option<&'static str> {
+    if diagnostics.toast_enabled == Some(false) {
+        Some("系统通知已关闭，请在 Windows 通知设置中开启。")
+    } else if diagnostics.app_enabled == Some(false) {
+        Some("本应用通知已关闭，请在 Windows 通知设置中开启。")
+    } else {
+        None
+    }
+}
+
+fn notification_settings_uri() -> &'static str {
+    "ms-settings:notifications"
+}
+
+#[cfg(windows)]
+fn open_notification_settings_impl() -> Result<(), String> {
+    Command::new("explorer.exe")
+        .arg(notification_settings_uri())
+        .spawn()
+        .map(|_| ())
+        .map_err(|error| error.to_string())
+}
+
+#[cfg(not(windows))]
+fn open_notification_settings_impl() -> Result<(), String> {
+    Err("当前系统不支持打开 Windows 通知设置。".to_string())
+}
+
+#[tauri::command]
+fn get_notification_diagnostics(app: tauri::AppHandle) -> NotificationDiagnostics {
+    notification_diagnostics(&app)
+}
+
+#[tauri::command]
+fn open_notification_settings() -> Result<(), String> {
+    open_notification_settings_impl()
+}
+
 #[tauri::command]
 fn send_native_notification(
     app: tauri::AppHandle,
     title: String,
     body: String,
-) -> Result<(), String> {
+) -> Result<NotificationDiagnostics, String> {
+    let diagnostics = notification_diagnostics(&app);
+    if let Some(message) = notification_block_message(&diagnostics) {
+        return Err(message.to_string());
+    }
+
     app.notification()
         .builder()
         .title(title)
         .body(body)
         .show()
-        .map_err(|error| error.to_string())
+        .map_err(|error| error.to_string())?;
+
+    Ok(diagnostics)
 }
 
 #[tauri::command]
@@ -240,6 +376,8 @@ pub fn run() {
             hide_main_window,
             open_settings_window,
             update_tray_status,
+            get_notification_diagnostics,
+            open_notification_settings,
             send_native_notification,
             save_png
         ])
@@ -264,7 +402,8 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
-    use super::tray_icon_rgba;
+    use super::*;
+    use std::path::Path;
 
     #[test]
     fn dynamic_tray_icon_has_expected_rgba_size() {
@@ -274,5 +413,32 @@ mod tests {
     #[test]
     fn dynamic_tray_icon_changes_with_progress() {
         assert_ne!(tray_icon_rgba(0.1, 3), tray_icon_rgba(0.9, 3));
+    }
+
+    #[test]
+    fn uses_powershell_app_id_for_dev_target_builds() {
+        let identity = notification_app_identity_for_exe(
+            "com.moneycounter.spike",
+            Path::new(r"C:\work\money_counter\src-tauri\target\debug\app.exe"),
+        );
+
+        assert_eq!(identity.app_id, POWERSHELL_APP_ID);
+        assert_eq!(identity.source, "development");
+    }
+
+    #[test]
+    fn uses_config_identifier_for_installed_builds() {
+        let identity = notification_app_identity_for_exe(
+            "com.moneycounter.spike",
+            Path::new(r"C:\Users\me\AppData\Local\Money Counter Spike\money-counter-spike.exe"),
+        );
+
+        assert_eq!(identity.app_id, "com.moneycounter.spike");
+        assert_eq!(identity.source, "application");
+    }
+
+    #[test]
+    fn notification_settings_uri_targets_windows_notifications() {
+        assert_eq!(notification_settings_uri(), "ms-settings:notifications");
     }
 }

@@ -27,7 +27,7 @@
           <strong id="rate">¥0.00/s</strong>
         </div>
 
-        <div class="metric">
+        <div class="metric progress-metric">
           <span>进度</span>
           <strong id="progress">0%</strong>
         </div>
@@ -178,6 +178,39 @@
               <option value="offWork">收工</option>
             </select>
           </label>
+          <label>
+            <span>低频提醒</span>
+            <select id="reminder-mode">
+              <option value="off">关闭</option>
+              <option value="on">开启</option>
+            </select>
+          </label>
+          <label>
+            <span>日程提醒</span>
+            <select id="schedule-reminders">
+              <option value="on">开启</option>
+              <option value="off">关闭</option>
+            </select>
+          </label>
+          <label>
+            <span>休息提醒</span>
+            <select id="break-reminders">
+              <option value="on">开启</option>
+              <option value="off">关闭</option>
+            </select>
+          </label>
+          <label>
+            <span>提醒间隔分钟</span>
+            <input id="reminder-interval" type="number" min="30" max="240" step="15" inputmode="numeric" />
+          </label>
+          <label>
+            <span>勿扰开始</span>
+            <input id="quiet-start" type="time" />
+          </label>
+          <label>
+            <span>勿扰结束</span>
+            <input id="quiet-end" type="time" />
+          </label>
         </div>
 
         <div class="settings-actions">
@@ -187,7 +220,18 @@
           <button id="clear-settings" class="danger-button" type="button">清空本地设置</button>
         </div>
 
-        <p id="settings-status" class="settings-status" aria-live="polite">设置只保存在本机。</p>
+        <p class="settings-status" aria-live="polite">
+          <span id="settings-status">设置只保存在本机。</span>
+          <button
+            id="open-notification-settings"
+            class="settings-link-button"
+            type="button"
+            aria-label="打开 Windows 通知设置"
+            hidden
+          >
+            打开通知设置
+          </button>
+        </p>
       </section>
     </main>
 

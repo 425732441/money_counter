@@ -25,6 +25,15 @@ describe("compact widget layout CSS", () => {
   it("hides desktop status text when the widget becomes an edge strip", () => {
     assert.match(styles, /\.widget-shell\.is-edge-hidden\s+\.status-line\s*\{[^}]*display:\s*none;/);
   });
+
+  it("keeps 100 percent progress readable after the proportional scale-up", () => {
+    assert.match(
+      styles,
+      /\.status-widget\s*\{[^}]*grid-template-columns:\s*34px minmax\(96px,\s*1fr\) 64px 46px 48px 193px;/,
+    );
+    assert.match(styles, /\.metric\.progress-metric strong\s*\{[^}]*overflow:\s*visible;/);
+    assert.match(styles, /\.status-line\s*\{[^}]*font-size:\s*0\.64rem;/);
+  });
 });
 
 describe("settings window layout CSS", () => {

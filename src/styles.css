@@ -78,12 +78,12 @@ button:disabled {
   --edge-progress: 2%;
   position: relative;
   min-width: 0;
-  height: 60px;
+  height: 66px;
   display: grid;
-  grid-template-columns: 30px minmax(112px, 1fr) 56px 32px 38px 169px;
+  grid-template-columns: 34px minmax(96px, 1fr) 64px 46px 48px 193px;
   align-items: center;
-  gap: 4px;
-  padding: 3px 6px;
+  gap: 5px;
+  padding: 4px 7px;
   border: 0;
   border-radius: 0;
   background:
@@ -175,9 +175,9 @@ button:disabled {
 }
 
 .coin-mark {
-  width: 30px;
-  height: 30px;
-  border-radius: 5px;
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
   background: #fff6d5;
   box-shadow: inset 0 -2px 0 rgba(255, 176, 32, 0.34), 0 4px 10px rgba(0, 0, 0, 0.16);
   display: grid;
@@ -185,8 +185,8 @@ button:disabled {
 }
 
 .coin-mark svg {
-  width: 23px;
-  height: 23px;
+  width: 26px;
+  height: 26px;
   fill: #ffcf53;
   stroke: #6b4300;
   stroke-width: 2.4;
@@ -201,12 +201,12 @@ button:disabled {
 .metric {
   min-width: 0;
   display: grid;
-  gap: 1px;
+  gap: 2px;
 }
 
 .metric span {
   color: #a7f3d0;
-  font-size: 0.58rem;
+  font-size: 0.64rem;
   font-weight: 700;
   line-height: 1;
 }
@@ -215,7 +215,7 @@ button:disabled {
   min-width: 0;
   color: #ffffff;
   font-variant-numeric: tabular-nums;
-  font-size: 0.82rem;
+  font-size: 0.91rem;
   font-weight: 800;
   line-height: 1.05;
   white-space: nowrap;
@@ -225,14 +225,19 @@ button:disabled {
 
 .metric.primary strong {
   color: #fff1b8;
-  font-size: 1.06rem;
+  font-size: 1.15rem;
+}
+
+.metric.progress-metric strong {
+  overflow: visible;
+  text-overflow: clip;
 }
 
 .spark {
-  height: 20px;
+  height: 23px;
   padding: 2px;
   border: 1px solid rgba(167, 243, 208, 0.25);
-  border-radius: 5px;
+  border-radius: 6px;
   background: rgba(2, 44, 34, 0.72);
 }
 
@@ -253,11 +258,11 @@ button:disabled {
 }
 
 .icon-button {
-  width: 24px;
-  height: 24px;
-  min-width: 24px;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
   border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 5px;
+  border-radius: 6px;
   padding: 0;
   display: grid;
   place-items: center;
@@ -292,8 +297,8 @@ button:disabled {
 }
 
 .icon-button svg {
-  width: 13px;
-  height: 13px;
+  width: 15px;
+  height: 15px;
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
@@ -303,8 +308,8 @@ button:disabled {
 
 .status-menu {
   position: absolute;
-  top: 42px;
-  right: 32px;
+  top: 47px;
+  right: 36px;
   z-index: 6;
   width: 132px;
   padding: 5px;
@@ -336,13 +341,13 @@ button:disabled {
 
 .status-line {
   position: fixed;
-  left: 46px;
-  bottom: 3px;
+  left: 51px;
+  bottom: 4px;
   z-index: 2;
-  max-width: 224px;
+  max-width: 274px;
   margin: 0;
   color: rgba(248, 255, 251, 0.72);
-  font-size: 0.52rem;
+  font-size: 0.64rem;
   line-height: 1;
   white-space: nowrap;
   overflow: hidden;
@@ -472,10 +477,34 @@ select {
 }
 
 .settings-status {
+  display: flex;
+  min-width: 0;
   min-height: 22px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
   margin: 14px 0 0;
   color: var(--color-subtle);
   font-size: 0.9rem;
+}
+
+.settings-link-button {
+  border: 0;
+  padding: 0;
+  color: var(--color-primary);
+  background: transparent;
+  font: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.settings-link-button:hover {
+  color: #0f766e;
+}
+
+.settings-link-button[hidden] {
+  display: none;
 }
 
 @media (max-width: 560px) {

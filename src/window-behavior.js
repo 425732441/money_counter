@@ -1,14 +1,14 @@
-export const WIDGET_HEIGHT = 60;
+export const WIDGET_HEIGHT = 66;
 export const EDGE_STRIP_SIZE = 6;
 export const EDGE_SNAP_DISTANCE = 12;
-export const MIN_WIDGET_WIDTH = 480;
-export const DEFAULT_WIDGET_WIDTH = 520;
-export const MAX_WIDGET_WIDTH = 520;
+export const MIN_WIDGET_WIDTH = 520;
+export const DEFAULT_WIDGET_WIDTH = 560;
+export const MAX_WIDGET_WIDTH = 560;
 
 export function getCompactWidgetWidth(screenSize) {
   const screenWidth = Number(screenSize?.width || DEFAULT_WIDGET_WIDTH);
   if (screenWidth >= 1600) return DEFAULT_WIDGET_WIDTH;
-  if (screenWidth >= 1200) return 500;
+  if (screenWidth >= 1200) return 540;
   return MIN_WIDGET_WIDTH;
 }
 

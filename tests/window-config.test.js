@@ -9,10 +9,10 @@ describe("main window dimensions", () => {
   it("starts compact and can shrink further at runtime", () => {
     const mainWindow = tauriConfig.app.windows.find((window) => window.label === "main");
 
-    assert.equal(mainWindow.width, 520);
-    assert.equal(mainWindow.minWidth, 480);
-    assert.equal(mainWindow.height, 60);
-    assert.equal(mainWindow.minHeight, 60);
+    assert.equal(mainWindow.width, 560);
+    assert.equal(mainWindow.minWidth, 520);
+    assert.equal(mainWindow.height, 66);
+    assert.equal(mainWindow.minHeight, 66);
   });
 
   it("does not rely on native transparency or shadow for the compact strip", () => {

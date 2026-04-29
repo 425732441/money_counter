@@ -2223,6 +2223,7 @@ dependencies = [
 name = "money-counter-spike"
 version = "0.0.1"
 dependencies = [
+ "serde",
  "tauri",
  "tauri-build",
  "tauri-plugin-autostart",
@@ -2230,6 +2231,7 @@ dependencies = [
  "tauri-plugin-dialog",
  "tauri-plugin-notification",
  "tauri-plugin-store",
+ "winreg 0.55.0",
 ]
 
 [[package]]
