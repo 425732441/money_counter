@@ -29,7 +29,7 @@ describe("compact widget layout CSS", () => {
   it("keeps 100 percent progress readable after the proportional scale-up", () => {
     assert.match(
       styles,
-      /\.status-widget\s*\{[^}]*grid-template-columns:\s*34px minmax\(96px,\s*1fr\) 64px 46px 48px 193px;/,
+      /\.status-widget\s*\{[^}]*grid-template-columns:\s*34px minmax\(96px,\s*1fr\) 64px 46px 48px 226px;/,
     );
     assert.match(styles, /\.metric\.progress-metric strong\s*\{[^}]*overflow:\s*visible;/);
     assert.match(styles, /\.status-line\s*\{[^}]*font-size:\s*0\.64rem;/);
@@ -45,5 +45,24 @@ describe("settings window layout CSS", () => {
 
   it("keeps the main status menu narrow", () => {
     assert.match(styles, /\.status-menu\s*\{[^}]*width:\s*132px;/);
+  });
+});
+
+describe("local stats hover panel CSS", () => {
+  it("can hide the toolbar entry when local stats are disabled", () => {
+    assert.match(styles, /\[data-local-stats-hidden="true"\]\s*\{[^}]*display:\s*none;/);
+  });
+
+  it("reveals the panel with an overlay state class", () => {
+    assert.match(styles, /\.widget-shell\.has-local-stats-panel\s+\.local-stats-panel/);
+    assert.match(styles, /\.widget-shell\.has-status-menu\s+\.status-menu/);
+  });
+
+  it("keeps expanded window space transparent outside painted panels", () => {
+    const shellRule = styles.match(/\.widget-shell\s*\{(?<body>[^}]+)\}/)?.groups.body;
+
+    assert.ok(shellRule);
+    assert.match(shellRule, /background:\s*transparent;/);
+    assert.match(styles, /\.status-widget\s*\{[^}]*background:/);
   });
 });

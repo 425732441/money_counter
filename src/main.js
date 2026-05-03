@@ -20,6 +20,12 @@ import {
   getWorkMetrics as getCoreWorkMetrics,
 } from "./work-core.js";
 import {
+  buildTodayStatsRecord,
+  getLocalStatsSummary,
+  incrementShareCount,
+  mergeLocalStatsRecord,
+} from "./local-stats-core.js";
+import {
   DEFAULT_WIDGET_WIDTH,
   EDGE_STRIP_SIZE,
   MIN_WIDGET_WIDTH,
@@ -52,11 +58,13 @@ const DEFAULT_SETTINGS = {
   ...DEFAULT_REMINDER_SETTINGS,
   workDaysPerMonth: 21.75,
   privacyMode: "blurred",
+  localStatsEnabled: false,
 };
 
 const PIN_STORE_KEY = "pinOnTop";
 const DAY_STATE_STORE_KEY = "dayState";
 const REMINDER_STATE_STORE_KEY = "reminderState";
+const LOCAL_STATS_STORE_KEY = "localStats";
 
 const el = {
   widgetView: document.querySelector("#widget-view"),
@@ -77,6 +85,7 @@ const el = {
   lunchStart: document.querySelector("#lunch-start"),
   lunchEnd: document.querySelector("#lunch-end"),
   privacyMode: document.querySelector("#privacy-mode"),
+  localStatsEnabled: document.querySelector("#local-stats-enabled"),
   statusOverride: document.querySelector("#status-override"),
   reminderMode: document.querySelector("#reminder-mode"),
   scheduleReminders: document.querySelector("#schedule-reminders"),
@@ -98,6 +107,15 @@ const el = {
   copyCard: document.querySelector("#copy-card"),
   saveCard: document.querySelector("#save-card"),
   hideWindow: document.querySelector("#hide-window"),
+  localStatsTrigger: document.querySelector("#local-stats-trigger"),
+  localStatsButton: document.querySelector("#local-stats-button"),
+  localStatsPanel: document.querySelector("#local-stats-panel"),
+  localStatsEmpty: document.querySelector("#local-stats-empty"),
+  localStatsToday: document.querySelector("#local-stats-today"),
+  localStatsUsedDays: document.querySelector("#local-stats-used-days"),
+  localStatsEarned: document.querySelector("#local-stats-earned"),
+  localStatsFishing: document.querySelector("#local-stats-fishing"),
+  localStatsRetention: document.querySelector("#local-stats-retention"),
   desktopStatus: document.querySelector("#desktop-status"),
   settingsStatus: document.querySelector("#settings-status"),
   shareCard: document.querySelector("#share-card"),
@@ -107,14 +125,18 @@ let store;
 let settings = { ...DEFAULT_SETTINGS };
 let dayState = createInitialDayState();
 let reminderState = createInitialReminderState();
+let localStats = [];
 let lastDayStatePersistAt = 0;
 let lastReminderStatePersistAt = 0;
+let lastLocalStatsPersistAt = 0;
 let autostartEnabled = false;
 let currentWindowLabel = "main";
 let currentWindow;
 let pinOnTop = true;
 let currentWidgetWidth = DEFAULT_WIDGET_WIDTH;
 let statusMenuOpen = false;
+let localStatsPanelOpen = false;
+let localStatsCloseTimer = 0;
 let edgeState = {
   edge: null,
   hidden: false,
@@ -143,6 +165,7 @@ function setEdgeVisual(edge, hidden) {
   el.statusWidget.classList.toggle("is-edge-hidden", Boolean(hidden));
   el.widgetView.classList.toggle("is-edge-hidden", Boolean(hidden));
   if (hidden && statusMenuOpen) closeStatusMenu();
+  if (hidden && localStatsPanelOpen) closeLocalStatsPanel();
 }
 
 function setEdgeProgress(progress) {
@@ -158,6 +181,11 @@ function clearEdgeTimers() {
   clearTimeout(edgeState.hideTimer);
   clearTimeout(edgeState.moveTimer);
   clearTimeout(edgeState.manualDragTimer);
+}
+
+function clearLocalStatsCloseTimer() {
+  clearTimeout(localStatsCloseTimer);
+  localStatsCloseTimer = 0;
 }
 
 async function getActiveMonitor() {
@@ -468,6 +496,11 @@ function displayAmount(value, metrics) {
   return `约 ${formatMoney(rounded)}+`;
 }
 
+function displayLocalStatsAmount(summary) {
+  if (settings.privacyMode === "progress") return `${summary.usedDays} 天记录`;
+  return displayAmount(summary.earned, { progress: 0 });
+}
+
 function getStatusLabel(statusId) {
   return WORK_STATUSES[statusId]?.label || statusId || "自动";
 }
@@ -499,6 +532,7 @@ function syncForm() {
   el.lunchStart.value = settings.lunchStart;
   el.lunchEnd.value = settings.lunchEnd;
   el.privacyMode.value = settings.privacyMode;
+  el.localStatsEnabled.value = settings.localStatsEnabled ? "on" : "off";
   el.statusOverride.value = dayState.statusOverride || "auto";
   el.reminderMode.value = settings.remindersEnabled ? "on" : "off";
   el.scheduleReminders.value = settings.scheduleRemindersEnabled ? "on" : "off";
@@ -525,6 +559,7 @@ function readForm() {
     lunchStart: el.lunchStart.value || DEFAULT_SETTINGS.lunchStart,
     lunchEnd: el.lunchEnd.value || DEFAULT_SETTINGS.lunchEnd,
     privacyMode: el.privacyMode.value,
+    localStatsEnabled: el.localStatsEnabled.value === "on",
     remindersEnabled: el.reminderMode.value === "on",
     scheduleRemindersEnabled: el.scheduleReminders.value === "on",
     breakRemindersEnabled: el.breakReminders.value === "on",
@@ -557,6 +592,50 @@ async function persistReminderState({ force = false } = {}) {
   lastReminderStatePersistAt = now;
   await store.set(REMINDER_STATE_STORE_KEY, reminderState);
   if (force) await store.save();
+}
+
+function renderLocalStats() {
+  if (!el.localStatsTrigger) return;
+
+  el.localStatsTrigger.dataset.localStatsHidden = settings.localStatsEnabled ? "false" : "true";
+  if (!settings.localStatsEnabled && localStatsPanelOpen) closeLocalStatsPanel();
+  const summary = getLocalStatsSummary(localStats, dayState.dateKey);
+  el.localStatsToday.textContent = summary.todayRecorded ? "已记录" : "暂无记录";
+  el.localStatsUsedDays.textContent = `${summary.usedDays} 天`;
+  el.localStatsEarned.textContent = displayLocalStatsAmount(summary);
+  el.localStatsFishing.textContent = formatDuration(summary.fishingSeconds);
+  el.localStatsRetention.textContent = `最近 ${summary.retentionDays} 天`;
+  el.localStatsEmpty.hidden = summary.hasRecords;
+}
+
+async function persistLocalStats(metrics, { force = false } = {}) {
+  if (!store || !settings.localStatsEnabled) return;
+
+  const now = Date.now();
+  if (!force && now - lastLocalStatsPersistAt < 60000) return;
+
+  const existingRecord = localStats.find((record) => record.date === dayState.dateKey) || {};
+  const record = buildTodayStatsRecord({
+    dateKey: dayState.dateKey,
+    metrics,
+    existingRecord,
+    now: new Date(now),
+  });
+
+  localStats = mergeLocalStatsRecord(localStats, record);
+  lastLocalStatsPersistAt = now;
+  await store.set(LOCAL_STATS_STORE_KEY, localStats);
+  if (force) await store.save();
+  renderLocalStats();
+}
+
+async function recordShareAction() {
+  if (!store || !settings.localStatsEnabled) return;
+
+  localStats = incrementShareCount(localStats, dayState.dateKey);
+  await store.set(LOCAL_STATS_STORE_KEY, localStats);
+  await store.save();
+  renderLocalStats();
 }
 
 function roundRect(ctx, x, y, width, height, radius) {
@@ -682,10 +761,12 @@ function render() {
     )}`,
   );
   renderCard(metrics);
+  renderLocalStats();
 
   if (currentWindowLabel === "main") {
     updateTrayStatus(metrics);
     persistDayState();
+    persistLocalStats(metrics);
     maybeSendReminder();
     currentWindow.setTitle(
       `回血 ${displayAmount(metrics.earned, metrics)} | ${formatMoney(metrics.rate)}/s | ${Math.round(
@@ -709,6 +790,7 @@ async function reloadSettings() {
     ...createInitialReminderState(),
     ...((await store.get(REMINDER_STATE_STORE_KEY)) || {}),
   };
+  localStats = (await store.get(LOCAL_STATS_STORE_KEY)) || [];
   syncForm();
   render();
 }
@@ -718,6 +800,7 @@ async function persistSettings() {
   await store.set("settings", settings);
   await store.set(DAY_STATE_STORE_KEY, dayState);
   await store.set(REMINDER_STATE_STORE_KEY, reminderState);
+  await store.set(LOCAL_STATS_STORE_KEY, localStats);
   await store.save();
   await emitTo("main", "settings-changed");
   setStatus("设置已保存。主窗口会继续实时刷新。", "settings");
@@ -728,10 +811,12 @@ async function clearSettings() {
   settings = { ...DEFAULT_SETTINGS };
   dayState = createInitialDayState();
   reminderState = createInitialReminderState();
+  localStats = [];
   await store.clear();
   await store.set(PIN_STORE_KEY, pinOnTop);
   await store.set(DAY_STATE_STORE_KEY, dayState);
   await store.set(REMINDER_STATE_STORE_KEY, reminderState);
+  await store.set(LOCAL_STATS_STORE_KEY, localStats);
   await store.save();
   await emitTo("main", "settings-changed");
   syncForm();
@@ -836,6 +921,7 @@ async function copyCard() {
       await image.close();
     }
     setStatus("分享图已复制到剪贴板。");
+    await recordShareAction();
   } catch (error) {
     setStatus(`复制失败：${error}`);
   } finally {
@@ -856,6 +942,7 @@ async function saveCard() {
     const bytes = Array.from(await canvasToPngBytes());
     await invoke("save_png", { path, bytes });
     setStatus(`分享图已保存：${path}`);
+    await recordShareAction();
   } catch (error) {
     setStatus(`保存失败：${error}`);
   } finally {
@@ -872,11 +959,15 @@ async function closeSettings() {
   await currentWindow.close();
 }
 
-async function setStatusMenuWindowOpen(open) {
+async function setOverlayWindowOpen(type) {
   if (currentWindowLabel !== "main" || edgeState.hidden) return;
 
   const width = currentWidgetWidth;
-  const height = open ? WIDGET_HEIGHT + 176 : WIDGET_HEIGHT;
+  const overlayHeights = {
+    statusMenu: 176,
+    localStats: 190,
+  };
+  const height = type ? WIDGET_HEIGHT + overlayHeights[type] : WIDGET_HEIGHT;
 
   try {
     await currentWindow.setSizeConstraints({
@@ -884,7 +975,7 @@ async function setStatusMenuWindowOpen(open) {
       minHeight: WIDGET_HEIGHT,
     });
 
-    if (open) {
+    if (type) {
       const { position, monitor, scaleFactor } = await getWindowGeometry();
       const workArea = monitor.workArea || monitor;
       const physicalHeight = Math.round(height * Math.max(1, scaleFactor));
@@ -897,18 +988,18 @@ async function setStatusMenuWindowOpen(open) {
 
     await currentWindow.setSize(new LogicalSize(width, height));
   } catch (error) {
-    console.warn("status menu resize failed", error);
+    console.warn("overlay resize failed", error);
   }
 }
 
-async function closeStatusMenu() {
+async function closeStatusMenu({ resize = true } = {}) {
   if (!statusMenuOpen) return;
 
   statusMenuOpen = false;
   el.statusMenu.hidden = true;
   el.widgetView.classList.remove("has-status-menu");
   updateStatusMenuSelection();
-  await setStatusMenuWindowOpen(false);
+  if (resize) await setOverlayWindowOpen(localStatsPanelOpen ? "localStats" : null);
 }
 
 async function openStatusMenu(event) {
@@ -916,12 +1007,13 @@ async function openStatusMenu(event) {
   if (currentWindowLabel !== "main" || edgeState.hidden) return;
 
   clearEdgeTimers();
+  await closeLocalStatsPanel({ resize: false });
   statusMenuOpen = true;
   edgeState.suppressAutoHideUntil = Date.now() + 1400;
   el.statusMenu.hidden = false;
   el.widgetView.classList.add("has-status-menu");
   updateStatusMenuSelection();
-  await setStatusMenuWindowOpen(true);
+  await setOverlayWindowOpen("statusMenu");
 }
 
 async function toggleStatusMenu(event) {
@@ -931,6 +1023,45 @@ async function toggleStatusMenu(event) {
   } else {
     await openStatusMenu(event);
   }
+}
+
+async function closeLocalStatsPanel({ resize = true } = {}) {
+  clearLocalStatsCloseTimer();
+  if (!localStatsPanelOpen) return;
+
+  localStatsPanelOpen = false;
+  el.localStatsPanel.hidden = true;
+  el.widgetView.classList.remove("has-local-stats-panel");
+  if (resize) await setOverlayWindowOpen(statusMenuOpen ? "statusMenu" : null);
+}
+
+async function openLocalStatsPanel(event) {
+  event?.stopPropagation();
+  if (currentWindowLabel !== "main" || edgeState.hidden || !settings.localStatsEnabled) return;
+
+  clearLocalStatsCloseTimer();
+  clearEdgeTimers();
+  await closeStatusMenu({ resize: false });
+  localStatsPanelOpen = true;
+  edgeState.suppressAutoHideUntil = Date.now() + 1400;
+  el.localStatsPanel.hidden = false;
+  el.widgetView.classList.add("has-local-stats-panel");
+  renderLocalStats();
+  await setOverlayWindowOpen("localStats");
+}
+
+function scheduleCloseLocalStatsPanel() {
+  clearLocalStatsCloseTimer();
+  localStatsCloseTimer = window.setTimeout(() => {
+    const activeElement = document.activeElement;
+    const stillInteractive =
+      el.localStatsTrigger.matches(":hover") ||
+      el.localStatsPanel.matches(":hover") ||
+      el.localStatsTrigger.contains(activeElement) ||
+      el.localStatsPanel.contains(activeElement);
+
+    if (!stillInteractive) closeLocalStatsPanel();
+  }, 120);
 }
 
 async function setStatusOverride(value) {
@@ -989,6 +1120,7 @@ async function boot() {
     ...createInitialReminderState(),
     ...((await store.get(REMINDER_STATE_STORE_KEY)) || {}),
   };
+  localStats = (await store.get(LOCAL_STATS_STORE_KEY)) || [];
   pinOnTop = (await store.get(PIN_STORE_KEY)) ?? true;
 
   syncForm();
@@ -1031,14 +1163,35 @@ for (const button of el.statusMenuButtons) {
 }
 
 document.addEventListener("pointerdown", (event) => {
-  if (!statusMenuOpen) return;
-  if (el.statusMenu.contains(event.target) || el.cycleStatus.contains(event.target)) return;
-  closeStatusMenu();
+  if (
+    statusMenuOpen &&
+    !el.statusMenu.contains(event.target) &&
+    !el.cycleStatus.contains(event.target)
+  ) {
+    closeStatusMenu();
+  }
+  if (
+    localStatsPanelOpen &&
+    !el.localStatsPanel.contains(event.target) &&
+    !el.localStatsTrigger.contains(event.target)
+  ) {
+    closeLocalStatsPanel();
+  }
 });
 
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") closeStatusMenu();
+  if (event.key === "Escape") {
+    closeStatusMenu();
+    closeLocalStatsPanel();
+  }
 });
+
+for (const node of [el.localStatsTrigger, el.localStatsPanel]) {
+  node.addEventListener("mouseenter", openLocalStatsPanel);
+  node.addEventListener("mouseleave", scheduleCloseLocalStatsPanel);
+  node.addEventListener("focusin", openLocalStatsPanel);
+  node.addEventListener("focusout", scheduleCloseLocalStatsPanel);
+}
 
 for (const input of [
   el.incomeMode,
@@ -1052,6 +1205,7 @@ for (const input of [
   el.lunchStart,
   el.lunchEnd,
   el.privacyMode,
+  el.localStatsEnabled,
   el.reminderMode,
   el.scheduleReminders,
   el.breakReminders,

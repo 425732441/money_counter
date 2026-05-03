@@ -15,12 +15,12 @@ describe("main window dimensions", () => {
     assert.equal(mainWindow.minHeight, 66);
   });
 
-  it("does not rely on native transparency or shadow for the compact strip", () => {
+  it("uses transparent native window space for expanded overlay panels", () => {
     const mainWindow = tauriConfig.app.windows.find((window) => window.label === "main");
 
-    assert.equal(mainWindow.transparent, false);
+    assert.equal(mainWindow.transparent, true);
     assert.equal(mainWindow.shadow, false);
-    assert.equal(mainWindow.backgroundColor, "#102522");
+    assert.equal(mainWindow.backgroundColor, "#00000000");
     assert.equal(capabilities.permissions.includes("core:window:allow-set-shadow"), true);
   });
 });

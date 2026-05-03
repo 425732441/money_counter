@@ -68,7 +68,7 @@ button:disabled {
   width: 100vw;
   height: 100vh;
   display: block;
-  background: #102522;
+  background: transparent;
   user-select: none;
   -webkit-user-select: none;
   cursor: move;
@@ -80,7 +80,7 @@ button:disabled {
   min-width: 0;
   height: 66px;
   display: grid;
-  grid-template-columns: 34px minmax(96px, 1fr) 64px 46px 48px 193px;
+  grid-template-columns: 34px minmax(96px, 1fr) 64px 46px 48px 226px;
   align-items: center;
   gap: 5px;
   padding: 4px 7px;
@@ -162,7 +162,8 @@ button:disabled {
   display: none;
 }
 
-.widget-shell.has-status-menu .status-line {
+.widget-shell.has-status-menu .status-line,
+.widget-shell.has-local-stats-panel .status-line {
   display: none;
 }
 
@@ -306,17 +307,89 @@ button:disabled {
   stroke-linejoin: round;
 }
 
-.status-menu {
+[data-local-stats-hidden="true"] {
+  display: none;
+}
+
+.local-stats-trigger {
+  position: static;
+}
+
+.status-menu,
+.local-stats-panel {
   position: absolute;
+  border: 1px solid rgba(153, 246, 228, 0.28);
+  border-radius: 8px;
+  color: #f8fffb;
+  background: #102522;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.32);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition:
+    opacity 180ms ease-out,
+    transform 180ms ease-out;
+}
+
+.local-stats-panel {
+  top: 47px;
+  right: 106px;
+  z-index: 8;
+  width: 260px;
+  padding: 12px;
+}
+
+.widget-shell.has-local-stats-panel .local-stats-panel,
+.widget-shell.has-status-menu .status-menu {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.local-stats-panel p {
+  margin: 0 0 8px;
+  color: rgba(248, 255, 251, 0.72);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.local-stats-panel dl {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+}
+
+.local-stats-panel div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.local-stats-panel dt,
+.local-stats-panel dd {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.2;
+}
+
+.local-stats-panel dt {
+  color: #a7f3d0;
+  font-weight: 700;
+}
+
+.local-stats-panel dd {
+  color: #fff1b8;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  text-align: right;
+}
+
+.status-menu {
   top: 47px;
   right: 36px;
   z-index: 6;
   width: 132px;
   padding: 5px;
-  border: 1px solid rgba(153, 246, 228, 0.24);
-  border-radius: 7px;
-  background: #102522;
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.3);
   cursor: default;
 }
 

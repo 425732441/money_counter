@@ -58,6 +58,16 @@
               <path d="M19 12a7.2 7.2 0 0 0-.1-1l2-1.5-2-3.4-2.4 1a8.2 8.2 0 0 0-1.8-1L14.4 3h-4.8l-.3 3.1a8.2 8.2 0 0 0-1.8 1l-2.4-1-2 3.4 2 1.5a7.2 7.2 0 0 0 0 2l-2 1.5 2 3.4 2.4-1a8.2 8.2 0 0 0 1.8 1l.3 3.1h4.8l.3-3.1a8.2 8.2 0 0 0 1.8-1l2.4 1 2-3.4-2-1.5c.1-.3.1-.7.1-1Z" />
             </svg>
           </button>
+          <div id="local-stats-trigger" class="local-stats-trigger" data-local-stats-hidden="true">
+            <button id="local-stats-button" class="icon-button" type="button" aria-label="查看本地统计" title="本地统计">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 19V9" />
+                <path d="M12 19V5" />
+                <path d="M19 19v-7" />
+                <path d="M4 19h16" />
+              </svg>
+            </button>
+          </div>
           <button id="copy-card" class="icon-button" type="button" aria-label="复制分享图" title="复制分享图">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <rect x="8" y="8" width="11" height="11" rx="2" />
@@ -86,6 +96,32 @@
         <button type="button" data-status="lunch" role="menuitemradio">午休</button>
         <button type="button" data-status="pause" role="menuitemradio">暂停</button>
         <button type="button" data-status="offWork" role="menuitemradio">收工</button>
+      </div>
+
+      <div id="local-stats-panel" class="local-stats-panel" role="status" aria-live="polite" hidden>
+        <p id="local-stats-empty">开启后开始记录，最多保留 30 天。</p>
+        <dl>
+          <div>
+            <dt>今日记录</dt>
+            <dd id="local-stats-today">暂无记录</dd>
+          </div>
+          <div>
+            <dt>近 7 天使用</dt>
+            <dd id="local-stats-used-days">0 天</dd>
+          </div>
+          <div>
+            <dt>近 7 天回血</dt>
+            <dd id="local-stats-earned">约 ¥0+</dd>
+          </div>
+          <div>
+            <dt>近 7 天摸鱼</dt>
+            <dd id="local-stats-fishing">0m</dd>
+          </div>
+          <div>
+            <dt>数据保留</dt>
+            <dd id="local-stats-retention">最近 30 天</dd>
+          </div>
+        </dl>
       </div>
 
       <p id="desktop-status" class="status-line" aria-live="polite">正在启动桌面小工具。</p>
@@ -165,6 +201,13 @@
               <option value="real">真实金额</option>
               <option value="progress">进度百分比</option>
               <option value="alias">暗号模式</option>
+            </select>
+          </label>
+          <label>
+            <span>本地统计</span>
+            <select id="local-stats-enabled">
+              <option value="off">关闭</option>
+              <option value="on">开启</option>
             </select>
           </label>
           <label>

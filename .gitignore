@@ -1,7 +1,11 @@
 .superpowers/
+.worktrees/
 .codex
 node_modules
 dist
 src-tauri/target
 src-tauri/gen
 docs/xhs/
+findings.md
+progress.md
+task_plan.md
