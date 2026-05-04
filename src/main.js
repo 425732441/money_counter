@@ -59,6 +59,7 @@ const DEFAULT_SETTINGS = {
   workDaysPerMonth: 21.75,
   privacyMode: "blurred",
   localStatsEnabled: false,
+  characterEnabled: true,
   onboardingCompleted: false,
   shareTemplate: "dailyReport",
 };
@@ -92,10 +93,22 @@ const DAY_STATE_STORE_KEY = "dayState";
 const REMINDER_STATE_STORE_KEY = "reminderState";
 const LOCAL_STATS_STORE_KEY = "localStats";
 
+const CHARACTER_STATE_CLASS = {
+  beforeWork: "is-pause",
+  working: "is-working",
+  fishing: "is-fishing",
+  lunch: "is-lunch",
+  pause: "is-pause",
+  offWork: "is-off-work",
+};
+
 const el = {
   widgetView: document.querySelector("#widget-view"),
   settingsView: document.querySelector("#settings-view"),
   statusWidget: document.querySelector("#status-widget"),
+  coinMark: document.querySelector("#coin-mark"),
+  characterMark: document.querySelector("#character-mark"),
+  pixelCharacter: document.querySelector("#pixel-character"),
   earned: document.querySelector("#earned"),
   rate: document.querySelector("#rate"),
   progress: document.querySelector("#progress"),
@@ -112,6 +125,7 @@ const el = {
   lunchEnd: document.querySelector("#lunch-end"),
   privacyMode: document.querySelector("#privacy-mode"),
   localStatsEnabled: document.querySelector("#local-stats-enabled"),
+  characterEnabled: document.querySelector("#character-enabled"),
   statusOverride: document.querySelector("#status-override"),
   reminderMode: document.querySelector("#reminder-mode"),
   scheduleReminders: document.querySelector("#schedule-reminders"),
@@ -574,6 +588,31 @@ function renderShareTemplateSelection() {
   }
 }
 
+function updateCharacterVisibility() {
+  if (!el.coinMark || !el.characterMark) return;
+
+  el.coinMark.hidden = settings.characterEnabled;
+  el.characterMark.hidden = !settings.characterEnabled;
+}
+
+function renderCharacter(status = WORK_STATUSES.working, metrics = {}) {
+  updateCharacterVisibility();
+  if (!el.pixelCharacter) return;
+
+  const statusId = status?.id || "working";
+  const characterState = CHARACTER_STATE_CLASS[statusId] || "is-working";
+  const isOvertime =
+    (statusId === "working" || statusId === "fishing") && Number(metrics.progress || 0) >= 1;
+
+  el.pixelCharacter.className = [
+    "pixel-character",
+    characterState,
+    isOvertime ? "is-overtime" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
 function selectShareTemplate(templateId) {
   if (!SHARE_TEMPLATES[templateId]) return;
 
@@ -600,6 +639,7 @@ function syncForm() {
   el.lunchEnd.value = settings.lunchEnd;
   el.privacyMode.value = settings.privacyMode;
   el.localStatsEnabled.value = settings.localStatsEnabled ? "on" : "off";
+  el.characterEnabled.value = settings.characterEnabled ? "on" : "off";
   el.statusOverride.value = dayState.statusOverride || "auto";
   el.reminderMode.value = settings.remindersEnabled ? "on" : "off";
   el.scheduleReminders.value = settings.scheduleRemindersEnabled ? "on" : "off";
@@ -628,6 +668,7 @@ function readForm() {
     lunchEnd: el.lunchEnd.value || DEFAULT_SETTINGS.lunchEnd,
     privacyMode: el.privacyMode.value,
     localStatsEnabled: el.localStatsEnabled.value === "on",
+    characterEnabled: el.characterEnabled.value === "on",
     remindersEnabled: el.reminderMode.value === "on",
     scheduleRemindersEnabled: el.scheduleReminders.value === "on",
     breakRemindersEnabled: el.breakReminders.value === "on",
@@ -1007,6 +1048,7 @@ function render() {
   );
   renderCard(metrics);
   renderLocalStats();
+  renderCharacter(metrics.effectiveStatus, metrics);
   renderOnboarding();
 
   if (onboardingActive) return;
@@ -1485,6 +1527,7 @@ for (const input of [
   el.lunchEnd,
   el.privacyMode,
   el.localStatsEnabled,
+  el.characterEnabled,
   el.reminderMode,
   el.scheduleReminders,
   el.breakReminders,

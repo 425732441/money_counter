@@ -8,13 +8,23 @@
   <body>
     <main id="widget-view" class="widget-shell">
       <section id="status-widget" class="status-widget" aria-label="回血计数器实时状态">
-        <div class="coin-mark" aria-hidden="true">
-          <svg viewBox="0 0 48 48" role="img">
-            <circle cx="24" cy="24" r="20" />
-            <path d="M15 25c5 6 13 6 18 0" />
-            <path d="M17 18h.01M31 18h.01" />
-            <path d="M24 9v7M24 32v7" />
-          </svg>
+        <div class="visual-mark" aria-hidden="true">
+          <div id="coin-mark" class="coin-mark" hidden>
+            <svg viewBox="0 0 48 48" role="img">
+              <circle cx="24" cy="24" r="20" />
+              <path d="M15 25c5 6 13 6 18 0" />
+              <path d="M17 18h.01M31 18h.01" />
+              <path d="M24 9v7M24 32v7" />
+            </svg>
+          </div>
+          <div id="character-mark" class="character-mark">
+            <div id="pixel-character" class="pixel-character is-working">
+              <span class="pixel-character__head"></span>
+              <span class="pixel-character__face"></span>
+              <span class="pixel-character__body"></span>
+              <span class="pixel-character__desk"></span>
+            </div>
+          </div>
         </div>
 
         <div class="metric primary">
@@ -296,6 +306,13 @@
             <select id="local-stats-enabled">
               <option value="off">关闭</option>
               <option value="on">开启</option>
+            </select>
+          </label>
+          <label>
+            <span class="field-label">轻角色 <span class="field-help" tabindex="0" aria-label="只影响主面板装饰和轻微动效，不会上传任何数据。" data-tip="只影响主面板装饰和轻微动效，不会上传任何数据。">?</span></span>
+            <select id="character-enabled">
+              <option value="on">开启</option>
+              <option value="off">关闭</option>
             </select>
           </label>
           <label>

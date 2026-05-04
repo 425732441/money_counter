@@ -36,6 +36,48 @@ describe("compact widget layout CSS", () => {
   });
 });
 
+describe("light character CSS", () => {
+  it("defines compact pixel character states and reduced-motion handling", () => {
+    for (const pattern of [
+      /\.character-mark\s*\{/,
+      /\.pixel-character\.is-working/,
+      /\.pixel-character\.is-fishing/,
+      /\.pixel-character\.is-lunch/,
+      /\.pixel-character\.is-off-work/,
+      /@keyframes\s+character-breathe/,
+      /@media\s+\(prefers-reduced-motion:\s*reduce\)/,
+    ]) {
+      assert.match(styles, pattern);
+    }
+  });
+
+  it("gives each character state a distinct motion pattern", () => {
+    for (const pattern of [
+      /\.pixel-character__body::before,\s*\.pixel-character__body::after\s*\{/,
+      /\.pixel-character\.is-working\s+\.pixel-character__body\s*\{[^}]*animation:\s*character-working-body/,
+      /\.pixel-character\.is-working\s+\.pixel-character__body::before\s*\{[^}]*animation:\s*character-typing-left/,
+      /\.pixel-character\.is-fishing\s*\{[^}]*animation:\s*character-sneak-laugh/,
+      /\.pixel-character\.is-lunch\s+\.pixel-character__head\s*\{[^}]*animation:\s*character-nap-head/,
+      /\.pixel-character\.is-off-work\s+\.pixel-character__body::before\s*\{[^}]*animation:\s*character-wave/,
+      /\.pixel-character\.is-overtime\s*\{[^}]*animation:\s*character-low-battery/,
+    ]) {
+      assert.match(styles, pattern);
+    }
+
+    for (const keyframe of [
+      "character-working-body",
+      "character-typing-left",
+      "character-typing-right",
+      "character-sneak-laugh",
+      "character-nap-head",
+      "character-wave",
+      "character-low-battery",
+    ]) {
+      assert.match(styles, new RegExp(`@keyframes\\s+${keyframe}`));
+    }
+  });
+});
+
 describe("settings window layout CSS", () => {
   it("keeps the settings view fully visible when possible and scrollable as fallback", () => {
     assert.match(styles, /body\.is-settings-window\s*\{[^}]*overflow:\s*hidden;/);

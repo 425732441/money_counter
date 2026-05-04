@@ -98,6 +98,38 @@ describe("compact widget metric roles", () => {
   });
 });
 
+describe("light character widget", () => {
+  it("exposes the default-on pixel character and settings switch", () => {
+    for (const id of ["character-mark", "pixel-character", "character-enabled"]) {
+      assert.match(html, new RegExp(`id="${id}"`));
+    }
+
+    assert.match(html, />\s*轻角色\s*</);
+    assert.match(html, /只影响主面板装饰和轻微动效，不会上传任何数据。/);
+  });
+
+  it("wires character settings and render targets in the runtime", () => {
+    for (const pattern of [
+      /characterEnabled:\s*true/,
+      /characterMark/,
+      /pixelCharacter/,
+    ]) {
+      assert.match(main, pattern);
+    }
+  });
+
+  it("maps runtime work states to character classes", () => {
+    for (const pattern of [
+      /function renderCharacter/,
+      /characterState/,
+      /is-off-work/,
+      /is-overtime/,
+    ]) {
+      assert.match(main, pattern);
+    }
+  });
+});
+
 describe("share template selector", () => {
   it("exposes compact template choices with preview popovers", () => {
     for (const id of [
