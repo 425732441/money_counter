@@ -89,6 +89,94 @@
         </nav>
       </section>
 
+      <section id="onboarding-view" class="onboarding-shell" aria-labelledby="onboarding-title" hidden>
+        <div class="onboarding-card" data-no-window-drag>
+          <header class="onboarding-header">
+            <p class="eyebrow">首次设置</p>
+            <h1 id="onboarding-title">先把回血规则设好</h1>
+            <p>3 步完成基础配置，之后也可以在设置里修改。</p>
+          </header>
+
+          <div id="onboarding-step-income" class="onboarding-step" data-onboarding-step="0">
+            <h2>收入</h2>
+            <label>
+              <span class="field-label">收入模式 <span class="field-help" tabindex="0" aria-label="决定收入按月、按天还是按小时换算。" data-tip="决定收入按月、按天还是按小时换算。">?</span></span>
+              <select id="onboarding-income-mode">
+                <option value="monthly">月薪</option>
+                <option value="daily">日薪</option>
+                <option value="hourly">时薪</option>
+              </select>
+            </label>
+            <label>
+              <span class="field-label">收入金额 <span class="field-help" tabindex="0" aria-label="用于计算每秒到账速度，按所选收入模式填写。" data-tip="用于计算每秒到账速度，按所选收入模式填写。">?</span></span>
+              <input id="onboarding-income-amount" type="number" min="0" step="100" inputmode="decimal" />
+            </label>
+          </div>
+
+          <div id="onboarding-step-schedule" class="onboarding-step" data-onboarding-step="1" hidden>
+            <h2>日程</h2>
+            <label>
+              <span class="field-label">工作日规则 <span class="field-help" tabindex="0" aria-label="用于判断哪些日期自动计入工作日。" data-tip="用于判断哪些日期自动计入工作日。">?</span></span>
+              <select id="onboarding-workday-mode">
+                <option value="weekdays">双休</option>
+                <option value="singleRest">单休</option>
+                <option value="all">每天</option>
+              </select>
+            </label>
+            <label>
+              <span class="field-label">上班时间 <span class="field-help" tabindex="0" aria-label="用于自动识别开工和计算当天进度。" data-tip="用于自动识别开工和计算当天进度。">?</span></span>
+              <input id="onboarding-start-time" type="time" />
+            </label>
+            <label>
+              <span class="field-label">下班时间 <span class="field-help" tabindex="0" aria-label="用于自动识别收工和计算当天进度。" data-tip="用于自动识别收工和计算当天进度。">?</span></span>
+              <input id="onboarding-end-time" type="time" />
+            </label>
+            <label>
+              <span class="field-label">午休开始 <span class="field-help" tabindex="0" aria-label="从这个时间开始暂停计入工作时长。" data-tip="从这个时间开始暂停计入工作时长。">?</span></span>
+              <input id="onboarding-lunch-start" type="time" />
+            </label>
+            <label>
+              <span class="field-label">午休结束 <span class="field-help" tabindex="0" aria-label="到这个时间恢复计入工作时长。" data-tip="到这个时间恢复计入工作时长。">?</span></span>
+              <input id="onboarding-lunch-end" type="time" />
+            </label>
+          </div>
+
+          <div id="onboarding-step-preferences" class="onboarding-step" data-onboarding-step="2" hidden>
+            <h2>偏好</h2>
+            <label>
+              <span class="field-label">隐私显示 <span class="field-help" tabindex="0" aria-label="控制桌面小窗如何显示金额，保护隐私。" data-tip="控制桌面小窗如何显示金额，保护隐私。">?</span></span>
+              <select id="onboarding-privacy-mode">
+                <option value="blurred">模糊金额</option>
+                <option value="real">真实金额</option>
+                <option value="progress">进度百分比</option>
+                <option value="alias">暗号模式</option>
+              </select>
+            </label>
+            <label>
+              <span class="field-label">本地统计 <span class="field-help" tabindex="0" aria-label="开启后只在本机记录近 30 天汇总。" data-tip="开启后只在本机记录近 30 天汇总。">?</span></span>
+              <select id="onboarding-local-stats-enabled">
+                <option value="off">关闭</option>
+                <option value="on">开启</option>
+              </select>
+            </label>
+            <label>
+              <span class="field-label">低频提醒 <span class="field-help" tabindex="0" aria-label="开启后按工作节奏发送低频系统提醒。" data-tip="开启后按工作节奏发送低频系统提醒。">?</span></span>
+              <select id="onboarding-reminder-mode">
+                <option value="off">关闭</option>
+                <option value="on">开启</option>
+              </select>
+            </label>
+          </div>
+
+          <footer class="onboarding-actions">
+            <button id="skip-onboarding" class="secondary-button" type="button">跳过</button>
+            <button id="onboarding-prev" class="secondary-button" type="button">上一步</button>
+            <button id="onboarding-next" class="primary-button" type="button">下一步</button>
+            <button id="complete-onboarding" class="primary-button" type="button" hidden>开始使用</button>
+          </footer>
+        </div>
+      </section>
+
       <div id="status-menu" class="status-menu" role="menu" aria-label="状态" hidden>
         <button type="button" data-status="auto" role="menuitemradio">自动</button>
         <button type="button" data-status="working" role="menuitemradio">开工</button>
@@ -144,7 +232,7 @@
 
         <div class="form-grid">
           <label>
-            <span>收入模式</span>
+            <span class="field-label">收入模式 <span class="field-help" tabindex="0" aria-label="决定收入按月、按天还是按小时换算。" data-tip="决定收入按月、按天还是按小时换算。">?</span></span>
             <select id="income-mode">
               <option value="monthly">月薪</option>
               <option value="daily">日薪</option>
@@ -152,7 +240,7 @@
             </select>
           </label>
           <label>
-            <span>收入金额</span>
+            <span class="field-label">收入金额 <span class="field-help" tabindex="0" aria-label="用于计算每秒到账速度，按所选收入模式填写。" data-tip="用于计算每秒到账速度，按所选收入模式填写。">?</span></span>
             <input id="income-amount" type="number" min="0" step="100" inputmode="decimal" />
           </label>
           <label>
@@ -171,7 +259,7 @@
             </select>
           </label>
           <label>
-            <span>工作日规则</span>
+            <span class="field-label">工作日规则 <span class="field-help" tabindex="0" aria-label="用于判断哪些日期自动计入工作日。" data-tip="用于判断哪些日期自动计入工作日。">?</span></span>
             <select id="workday-mode">
               <option value="weekdays">双休</option>
               <option value="singleRest">单休</option>
@@ -179,23 +267,23 @@
             </select>
           </label>
           <label>
-            <span>上班时间</span>
+            <span class="field-label">上班时间 <span class="field-help" tabindex="0" aria-label="用于自动识别开工和计算当天进度。" data-tip="用于自动识别开工和计算当天进度。">?</span></span>
             <input id="start-time" type="time" />
           </label>
           <label>
-            <span>下班时间</span>
+            <span class="field-label">下班时间 <span class="field-help" tabindex="0" aria-label="用于自动识别收工和计算当天进度。" data-tip="用于自动识别收工和计算当天进度。">?</span></span>
             <input id="end-time" type="time" />
           </label>
           <label>
-            <span>午休开始</span>
+            <span class="field-label">午休开始 <span class="field-help" tabindex="0" aria-label="从这个时间开始暂停计入工作时长。" data-tip="从这个时间开始暂停计入工作时长。">?</span></span>
             <input id="lunch-start" type="time" />
           </label>
           <label>
-            <span>午休结束</span>
+            <span class="field-label">午休结束 <span class="field-help" tabindex="0" aria-label="到这个时间恢复计入工作时长。" data-tip="到这个时间恢复计入工作时长。">?</span></span>
             <input id="lunch-end" type="time" />
           </label>
           <label>
-            <span>隐私显示</span>
+            <span class="field-label">隐私显示 <span class="field-help" tabindex="0" aria-label="控制桌面小窗如何显示金额，保护隐私。" data-tip="控制桌面小窗如何显示金额，保护隐私。">?</span></span>
             <select id="privacy-mode">
               <option value="blurred">模糊金额</option>
               <option value="real">真实金额</option>
@@ -204,7 +292,7 @@
             </select>
           </label>
           <label>
-            <span>本地统计</span>
+            <span class="field-label">本地统计 <span class="field-help" tabindex="0" aria-label="开启后只在本机记录近 30 天汇总。" data-tip="开启后只在本机记录近 30 天汇总。">?</span></span>
             <select id="local-stats-enabled">
               <option value="off">关闭</option>
               <option value="on">开启</option>
@@ -222,7 +310,7 @@
             </select>
           </label>
           <label>
-            <span>低频提醒</span>
+            <span class="field-label">低频提醒 <span class="field-help" tabindex="0" aria-label="开启后按工作节奏发送低频系统提醒。" data-tip="开启后按工作节奏发送低频系统提醒。">?</span></span>
             <select id="reminder-mode">
               <option value="off">关闭</option>
               <option value="on">开启</option>

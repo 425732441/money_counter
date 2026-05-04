@@ -46,6 +46,13 @@ describe("settings window layout CSS", () => {
   it("keeps the main status menu narrow", () => {
     assert.match(styles, /\.status-menu\s*\{[^}]*width:\s*132px;/);
   });
+
+  it("styles field tips as icon-triggered hover overlays", () => {
+    assert.match(styles, /\.field-label\s*\{/);
+    assert.match(styles, /\.field-help\s*\{/);
+    assert.match(styles, /\.field-help::after\s*\{[^}]*content:\s*attr\(data-tip\);/);
+    assert.match(styles, /\.field-help:hover::after,\s*\.field-help:focus-visible::after\s*\{[^}]*opacity:\s*1;/);
+  });
 });
 
 describe("local stats hover panel CSS", () => {
@@ -64,5 +71,13 @@ describe("local stats hover panel CSS", () => {
     assert.ok(shellRule);
     assert.match(shellRule, /background:\s*transparent;/);
     assert.match(styles, /\.status-widget\s*\{[^}]*background:/);
+  });
+});
+
+describe("onboarding wizard CSS", () => {
+  it("styles the first-run wizard as a transparent-window overlay", () => {
+    assert.match(styles, /\.onboarding-shell\s*\{/);
+    assert.match(styles, /\.onboarding-step\[hidden\]\s*\{[^}]*display:\s*none/);
+    assert.match(styles, /\.widget-shell\.is-onboarding\s+\.status-widget/);
   });
 });

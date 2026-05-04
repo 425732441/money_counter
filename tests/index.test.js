@@ -97,3 +97,63 @@ describe("compact widget metric roles", () => {
     assert.match(html, /id="progress"/);
   });
 });
+
+describe("first-run onboarding wizard", () => {
+  it("exposes the three-step onboarding flow and core controls", () => {
+    for (const id of [
+      "onboarding-view",
+      "onboarding-step-income",
+      "onboarding-step-schedule",
+      "onboarding-step-preferences",
+      "onboarding-income-mode",
+      "onboarding-income-amount",
+      "onboarding-workday-mode",
+      "onboarding-start-time",
+      "onboarding-end-time",
+      "onboarding-privacy-mode",
+      "onboarding-local-stats-enabled",
+      "onboarding-reminder-mode",
+      "onboarding-prev",
+      "onboarding-next",
+      "complete-onboarding",
+      "skip-onboarding",
+    ]) {
+      assert.match(html, new RegExp(`id="${id}"`));
+    }
+  });
+
+  it("mirrors settings field tips in the onboarding flow", () => {
+    for (const tip of [
+      "决定收入按月、按天还是按小时换算。",
+      "用于计算每秒到账速度，按所选收入模式填写。",
+      "用于判断哪些日期自动计入工作日。",
+      "用于自动识别开工和计算当天进度。",
+      "用于自动识别收工和计算当天进度。",
+      "从这个时间开始暂停计入工作时长。",
+      "到这个时间恢复计入工作时长。",
+      "控制桌面小窗如何显示金额，保护隐私。",
+      "开启后只在本机记录近 30 天汇总。",
+      "开启后按工作节奏发送低频系统提醒。",
+    ]) {
+      const matches = html.match(new RegExp(`data-tip="${tip}"`, "g")) || [];
+      assert.equal(matches.length, 2);
+    }
+
+    assert.doesNotMatch(html, /<small class="field-tip">/);
+    assert.match(html, /class="field-label"[^>]*>\s*收入模式\s*<span class="field-help"/);
+    assert.match(html, /class="field-help"[^>]*tabindex="0"/);
+  });
+
+  it("wires first-run onboarding state and persistence helpers", () => {
+    for (const pattern of [
+      /onboardingCompleted:\s*false/,
+      /function syncOnboardingForm/,
+      /function readOnboardingForm/,
+      /function renderOnboarding/,
+      /async function completeOnboarding/,
+      /async function skipOnboarding/,
+    ]) {
+      assert.match(main, pattern);
+    }
+  });
+});

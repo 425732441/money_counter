@@ -59,6 +59,7 @@ const DEFAULT_SETTINGS = {
   workDaysPerMonth: 21.75,
   privacyMode: "blurred",
   localStatsEnabled: false,
+  onboardingCompleted: false,
 };
 
 const PIN_STORE_KEY = "pinOnTop";
@@ -116,6 +117,22 @@ const el = {
   localStatsEarned: document.querySelector("#local-stats-earned"),
   localStatsFishing: document.querySelector("#local-stats-fishing"),
   localStatsRetention: document.querySelector("#local-stats-retention"),
+  onboardingView: document.querySelector("#onboarding-view"),
+  onboardingSteps: Array.from(document.querySelectorAll("[data-onboarding-step]")),
+  onboardingIncomeMode: document.querySelector("#onboarding-income-mode"),
+  onboardingIncomeAmount: document.querySelector("#onboarding-income-amount"),
+  onboardingWorkdayMode: document.querySelector("#onboarding-workday-mode"),
+  onboardingStartTime: document.querySelector("#onboarding-start-time"),
+  onboardingEndTime: document.querySelector("#onboarding-end-time"),
+  onboardingLunchStart: document.querySelector("#onboarding-lunch-start"),
+  onboardingLunchEnd: document.querySelector("#onboarding-lunch-end"),
+  onboardingPrivacyMode: document.querySelector("#onboarding-privacy-mode"),
+  onboardingLocalStatsEnabled: document.querySelector("#onboarding-local-stats-enabled"),
+  onboardingReminderMode: document.querySelector("#onboarding-reminder-mode"),
+  onboardingPrev: document.querySelector("#onboarding-prev"),
+  onboardingNext: document.querySelector("#onboarding-next"),
+  completeOnboarding: document.querySelector("#complete-onboarding"),
+  skipOnboarding: document.querySelector("#skip-onboarding"),
   desktopStatus: document.querySelector("#desktop-status"),
   settingsStatus: document.querySelector("#settings-status"),
   shareCard: document.querySelector("#share-card"),
@@ -137,6 +154,7 @@ let currentWidgetWidth = DEFAULT_WIDGET_WIDTH;
 let statusMenuOpen = false;
 let localStatsPanelOpen = false;
 let localStatsCloseTimer = 0;
+let onboardingStep = 0;
 let edgeState = {
   edge: null,
   hidden: false,
@@ -574,6 +592,90 @@ function readForm() {
   };
 }
 
+function syncOnboardingForm() {
+  if (!el.onboardingIncomeMode) return;
+
+  el.onboardingIncomeMode.value = settings.incomeMode;
+  el.onboardingIncomeAmount.value = settings.incomeAmount;
+  el.onboardingWorkdayMode.value = settings.workdayMode;
+  el.onboardingStartTime.value = settings.startTime;
+  el.onboardingEndTime.value = settings.endTime;
+  el.onboardingLunchStart.value = settings.lunchStart;
+  el.onboardingLunchEnd.value = settings.lunchEnd;
+  el.onboardingPrivacyMode.value = settings.privacyMode;
+  el.onboardingLocalStatsEnabled.value = settings.localStatsEnabled ? "on" : "off";
+  el.onboardingReminderMode.value = settings.remindersEnabled ? "on" : "off";
+}
+
+function readOnboardingForm() {
+  if (!el.onboardingIncomeMode) return;
+
+  settings = {
+    ...settings,
+    incomeMode: el.onboardingIncomeMode.value,
+    incomeAmount: Number(el.onboardingIncomeAmount.value || DEFAULT_SETTINGS.incomeAmount),
+    workdayMode: el.onboardingWorkdayMode.value,
+    startTime: el.onboardingStartTime.value || DEFAULT_SETTINGS.startTime,
+    endTime: el.onboardingEndTime.value || DEFAULT_SETTINGS.endTime,
+    lunchStart: el.onboardingLunchStart.value || DEFAULT_SETTINGS.lunchStart,
+    lunchEnd: el.onboardingLunchEnd.value || DEFAULT_SETTINGS.lunchEnd,
+    privacyMode: el.onboardingPrivacyMode.value,
+    localStatsEnabled: el.onboardingLocalStatsEnabled.value === "on",
+    remindersEnabled: el.onboardingReminderMode.value === "on",
+  };
+}
+
+function renderOnboarding() {
+  if (!el.onboardingView) return;
+
+  const active = currentWindowLabel === "main" && !settings.onboardingCompleted;
+  el.onboardingView.hidden = !active;
+  el.widgetView.classList.toggle("is-onboarding", active);
+  el.statusWidget.setAttribute("aria-hidden", String(active));
+
+  const safeStep = Math.max(0, Math.min(el.onboardingSteps.length - 1, onboardingStep));
+  onboardingStep = safeStep;
+  for (const step of el.onboardingSteps) {
+    step.hidden = Number(step.dataset.onboardingStep) !== safeStep;
+  }
+
+  const isLastStep = safeStep === el.onboardingSteps.length - 1;
+  el.onboardingPrev.disabled = safeStep === 0;
+  el.onboardingNext.hidden = isLastStep;
+  el.completeOnboarding.hidden = !isLastStep;
+}
+
+async function completeOnboarding() {
+  readOnboardingForm();
+  settings = {
+    ...settings,
+    onboardingCompleted: true,
+  };
+  await store.set("settings", settings);
+  await store.save();
+  await emitTo("main", "settings-changed");
+  syncForm();
+  renderOnboarding();
+  render();
+  await setOverlayWindowOpen(null);
+  setStatus("首次设置已完成。");
+}
+
+async function skipOnboarding() {
+  settings = {
+    ...settings,
+    onboardingCompleted: true,
+  };
+  await store.set("settings", settings);
+  await store.save();
+  await emitTo("main", "settings-changed");
+  syncForm();
+  renderOnboarding();
+  render();
+  await setOverlayWindowOpen(null);
+  setStatus("已跳过首次设置，使用当前默认配置。");
+}
+
 async function persistDayState({ force = false } = {}) {
   if (!store) return;
   const now = Date.now();
@@ -750,6 +852,7 @@ async function maybeSendReminder() {
 function render() {
   dayState = advanceDayState(dayState, settings);
   const metrics = getCoreWorkMetrics(settings, dayState);
+  const onboardingActive = currentWindowLabel === "main" && !settings.onboardingCompleted;
   el.earned.textContent = displayAmount(metrics.earned, metrics);
   el.rate.textContent = `${formatMoney(metrics.rate)}/s`;
   el.progress.textContent = `${Math.round(metrics.progress * 100)}%`;
@@ -762,6 +865,9 @@ function render() {
   );
   renderCard(metrics);
   renderLocalStats();
+  renderOnboarding();
+
+  if (onboardingActive) return;
 
   if (currentWindowLabel === "main") {
     updateTrayStatus(metrics);
@@ -792,7 +898,11 @@ async function reloadSettings() {
   };
   localStats = (await store.get(LOCAL_STATS_STORE_KEY)) || [];
   syncForm();
+  syncOnboardingForm();
   render();
+  if (currentWindowLabel === "main") {
+    await setOverlayWindowOpen(settings.onboardingCompleted ? null : "onboarding");
+  }
 }
 
 async function persistSettings() {
@@ -966,6 +1076,7 @@ async function setOverlayWindowOpen(type) {
   const overlayHeights = {
     statusMenu: 176,
     localStats: 190,
+    onboarding: 334,
   };
   const height = type ? WIDGET_HEIGHT + overlayHeights[type] : WIDGET_HEIGHT;
 
@@ -1004,7 +1115,7 @@ async function closeStatusMenu({ resize = true } = {}) {
 
 async function openStatusMenu(event) {
   event?.stopPropagation();
-  if (currentWindowLabel !== "main" || edgeState.hidden) return;
+  if (currentWindowLabel !== "main" || edgeState.hidden || !settings.onboardingCompleted) return;
 
   clearEdgeTimers();
   await closeLocalStatsPanel({ resize: false });
@@ -1037,7 +1148,14 @@ async function closeLocalStatsPanel({ resize = true } = {}) {
 
 async function openLocalStatsPanel(event) {
   event?.stopPropagation();
-  if (currentWindowLabel !== "main" || edgeState.hidden || !settings.localStatsEnabled) return;
+  if (
+    currentWindowLabel !== "main" ||
+    edgeState.hidden ||
+    !settings.onboardingCompleted ||
+    !settings.localStatsEnabled
+  ) {
+    return;
+  }
 
   clearLocalStatsCloseTimer();
   clearEdgeTimers();
@@ -1124,6 +1242,7 @@ async function boot() {
   pinOnTop = (await store.get(PIN_STORE_KEY)) ?? true;
 
   syncForm();
+  syncOnboardingForm();
   render();
   await refreshAutostart();
 
@@ -1133,6 +1252,7 @@ async function boot() {
   } else {
     await applyWindowChrome();
     await applyResponsiveWindowSize();
+    await setOverlayWindowOpen(settings.onboardingCompleted ? null : "onboarding");
     await applyPinState(pinOnTop);
     await setupEdgeHiding();
     setStatus("实时状态条已就绪。");
@@ -1153,6 +1273,17 @@ el.copyCard.addEventListener("click", copyCard);
 el.saveCard.addEventListener("click", saveCard);
 el.hideWindow.addEventListener("click", () => invoke("hide_main_window"));
 el.widgetView.addEventListener("pointerdown", startDrag);
+el.onboardingPrev.addEventListener("click", () => {
+  onboardingStep -= 1;
+  renderOnboarding();
+});
+el.onboardingNext.addEventListener("click", () => {
+  readOnboardingForm();
+  onboardingStep += 1;
+  renderOnboarding();
+});
+el.completeOnboarding.addEventListener("click", completeOnboarding);
+el.skipOnboarding.addEventListener("click", skipOnboarding);
 
 for (const button of el.statusMenuButtons) {
   button.addEventListener("click", async (event) => {
@@ -1215,6 +1346,24 @@ for (const input of [
 ]) {
   input.addEventListener("input", () => {
     readForm();
+    render();
+  });
+}
+
+for (const input of [
+  el.onboardingIncomeMode,
+  el.onboardingIncomeAmount,
+  el.onboardingWorkdayMode,
+  el.onboardingStartTime,
+  el.onboardingEndTime,
+  el.onboardingLunchStart,
+  el.onboardingLunchEnd,
+  el.onboardingPrivacyMode,
+  el.onboardingLocalStatsEnabled,
+  el.onboardingReminderMode,
+]) {
+  input.addEventListener("input", () => {
+    readOnboardingForm();
     render();
   });
 }
