@@ -60,6 +60,31 @@ const DEFAULT_SETTINGS = {
   privacyMode: "blurred",
   localStatsEnabled: false,
   onboardingCompleted: false,
+  shareTemplate: "dailyReport",
+};
+
+const SHARE_TEMPLATES = {
+  dailyReport: {
+    label: "今日打工战报",
+    accent: "#ffb020",
+    secondary: "#14b8a6",
+    surface: "#102522",
+    background: "#f0fdfa",
+  },
+  fishingBill: {
+    label: "摸鱼回血账单",
+    accent: "#22d3ee",
+    secondary: "#8b5cf6",
+    surface: "#17133f",
+    background: "#eef2ff",
+  },
+  offworkCard: {
+    label: "下班生存卡",
+    accent: "#f97316",
+    secondary: "#facc15",
+    surface: "#431407",
+    background: "#fff7ed",
+  },
 };
 
 const PIN_STORE_KEY = "pinOnTop";
@@ -103,6 +128,7 @@ const el = {
   cycleStatus: document.querySelector("#cycle-status"),
   statusMenu: document.querySelector("#status-menu"),
   statusMenuButtons: Array.from(document.querySelectorAll("#status-menu [data-status]")),
+  shareTemplateButtons: Array.from(document.querySelectorAll("[data-share-template]")),
   togglePin: document.querySelector("#toggle-pin"),
   toggleAutostart: document.querySelector("#toggle-autostart"),
   copyCard: document.querySelector("#copy-card"),
@@ -536,6 +562,29 @@ function updateStatusMenuSelection(statusId = dayState.statusOverride || "auto")
   el.cycleStatus.setAttribute("aria-expanded", String(statusMenuOpen));
 }
 
+function renderShareTemplateSelection() {
+  const templateId = SHARE_TEMPLATES[settings.shareTemplate]
+    ? settings.shareTemplate
+    : DEFAULT_SETTINGS.shareTemplate;
+
+  for (const button of el.shareTemplateButtons) {
+    const active = button.dataset.shareTemplate === templateId;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-pressed", String(active));
+  }
+}
+
+function selectShareTemplate(templateId) {
+  if (!SHARE_TEMPLATES[templateId]) return;
+
+  settings = {
+    ...settings,
+    shareTemplate: templateId,
+  };
+  renderShareTemplateSelection();
+  render();
+}
+
 function syncForm() {
   if (!el.incomeMode) return;
 
@@ -559,6 +608,7 @@ function syncForm() {
   el.quietStart.value = settings.quietStart;
   el.quietEnd.value = settings.quietEnd;
   updateStatusMenuSelection();
+  renderShareTemplateSelection();
 }
 
 function readForm() {
@@ -584,6 +634,9 @@ function readForm() {
     reminderIntervalMinutes: Number(el.reminderInterval.value || DEFAULT_SETTINGS.reminderIntervalMinutes),
     quietStart: el.quietStart.value || DEFAULT_SETTINGS.quietStart,
     quietEnd: el.quietEnd.value || DEFAULT_SETTINGS.quietEnd,
+    shareTemplate: SHARE_TEMPLATES[settings.shareTemplate]
+      ? settings.shareTemplate
+      : DEFAULT_SETTINGS.shareTemplate,
   };
 
   dayState = {
@@ -750,21 +803,32 @@ function roundRect(ctx, x, y, width, height, radius) {
   ctx.closePath();
 }
 
-function renderCard(metrics) {
-  const canvas = el.shareCard;
-  const ctx = canvas.getContext("2d");
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  ctx.fillStyle = "#f0fdfa";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  ctx.fillStyle = "#102522";
-  roundRect(ctx, 40, 40, 820, 400, 18);
+function fillRoundedRect(ctx, x, y, width, height, radius, fillStyle) {
+  ctx.fillStyle = fillStyle;
+  roundRect(ctx, x, y, width, height, radius);
   ctx.fill();
+}
 
-  ctx.fillStyle = "#14b8a6";
+function renderCardShell(ctx, template) {
+  ctx.fillStyle = template.background;
+  ctx.fillRect(0, 0, 900, 480);
+  fillRoundedRect(ctx, 40, 40, 820, 400, 22, template.surface);
+
+  ctx.fillStyle = template.secondary;
+  ctx.globalAlpha = 0.16;
+  ctx.beginPath();
+  ctx.arc(760, 110, 180, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+function renderDailyReportCard(ctx, metrics) {
+  const template = SHARE_TEMPLATES.dailyReport;
+  renderCardShell(ctx, template);
+
+  ctx.fillStyle = template.secondary;
   ctx.fillRect(40, 365, 820 * metrics.progress, 18);
-  ctx.fillStyle = "#ffb020";
+  ctx.fillStyle = template.accent;
   ctx.beginPath();
   ctx.arc(760, 128, 48, 0, Math.PI * 2);
   ctx.fill();
@@ -792,13 +856,91 @@ function renderCard(metrics) {
   ctx.fillText(`每秒到账 ${formatMoney(metrics.rate)}/s`, 88, 292);
   ctx.fillText(`工作进度 ${Math.round(metrics.progress * 100)}%`, 88, 334);
 
-  ctx.fillStyle = "#ffb020";
+  ctx.fillStyle = template.accent;
   ctx.font = "700 24px Segoe UI, sans-serif";
   ctx.fillText("老板不在，回款照来。", 88, 416);
+}
 
-  ctx.fillStyle = "#99f6e4";
+function renderFishingBillCard(ctx, metrics) {
+  const template = SHARE_TEMPLATES.fishingBill;
+  const fishingEarned = metrics.fishingSeconds * metrics.rate;
+  renderCardShell(ctx, template);
+
+  fillRoundedRect(ctx, 84, 148, 324, 118, 18, "rgba(34, 211, 238, 0.16)");
+  fillRoundedRect(ctx, 440, 148, 300, 118, 18, "rgba(139, 92, 246, 0.22)");
+  ctx.fillStyle = template.accent;
+  ctx.fillRect(84, 350, Math.max(18, 650 * Math.min(1, metrics.fishingSeconds / Math.max(1, metrics.paidSeconds))), 18);
+
+  ctx.fillStyle = "#c4b5fd";
+  ctx.font = "800 28px Segoe UI, sans-serif";
+  ctx.fillText("摸鱼回血账单", 84, 112);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "800 54px Segoe UI, sans-serif";
+  ctx.fillText(formatDuration(metrics.fishingSeconds), 108, 220);
+  ctx.fillText(displayAmount(fishingEarned, metrics), 464, 220);
+
+  ctx.fillStyle = "#a5f3fc";
+  ctx.font = "700 22px Segoe UI, sans-serif";
+  ctx.fillText("摸鱼时长", 108, 250);
+  ctx.fillText("摸鱼回血", 464, 250);
+
+  ctx.fillStyle = template.accent;
+  ctx.font = "700 26px Segoe UI, sans-serif";
+  ctx.fillText("这不是走神，是现金流管理。", 88, 416);
+}
+
+function renderOffworkCard(ctx, metrics) {
+  const template = SHARE_TEMPLATES.offworkCard;
+  const remainingSeconds = Math.max(0, metrics.plannedSeconds - metrics.paidSeconds);
+  renderCardShell(ctx, template);
+
+  const gradient = ctx.createLinearGradient(72, 84, 808, 396);
+  gradient.addColorStop(0, "#f97316");
+  gradient.addColorStop(1, "#facc15");
+  fillRoundedRect(ctx, 84, 305, 680, 20, 10, "rgba(255, 255, 255, 0.22)");
+  fillRoundedRect(ctx, 84, 305, 680 * metrics.progress, 20, 10, gradient);
+
+  ctx.fillStyle = "#fed7aa";
+  ctx.font = "800 28px Segoe UI, sans-serif";
+  ctx.fillText("下班生存卡", 84, 112);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = "800 72px Segoe UI, sans-serif";
+  ctx.fillText(remainingSeconds > 0 ? formatDuration(remainingSeconds) : "已收工", 84, 222);
+
+  ctx.fillStyle = "#ffedd5";
+  ctx.font = "700 28px Segoe UI, sans-serif";
+  ctx.fillText(`今日回血 ${displayAmount(metrics.earned, metrics)}`, 88, 274);
+  ctx.fillText(`生存进度 ${Math.round(metrics.progress * 100)}%`, 88, 360);
+
+  ctx.fillStyle = template.secondary;
+  ctx.font = "700 26px Segoe UI, sans-serif";
+  ctx.fillText("今日份工位生存，接近通关。", 88, 416);
+}
+
+function renderCardBrand(ctx, template) {
+  ctx.fillStyle = template.secondary;
   ctx.font = "20px Segoe UI, sans-serif";
   ctx.fillText("Money Counter Spike", 622, 416);
+}
+
+function renderCard(metrics) {
+  const canvas = el.shareCard;
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const templateId = SHARE_TEMPLATES[settings.shareTemplate]
+    ? settings.shareTemplate
+    : DEFAULT_SETTINGS.shareTemplate;
+  if (templateId === "fishingBill") {
+    renderFishingBillCard(ctx, metrics);
+  } else if (templateId === "offworkCard") {
+    renderOffworkCard(ctx, metrics);
+  } else {
+    renderDailyReportCard(ctx, metrics);
+  }
+  renderCardBrand(ctx, SHARE_TEMPLATES[templateId]);
 }
 
 async function updateTrayStatus(metrics) {
@@ -1290,6 +1432,12 @@ for (const button of el.statusMenuButtons) {
     event.stopPropagation();
     await setStatusOverride(button.dataset.status);
     await closeStatusMenu();
+  });
+}
+
+for (const button of el.shareTemplateButtons) {
+  button.addEventListener("click", () => {
+    selectShareTemplate(button.dataset.shareTemplate);
   });
 }
 

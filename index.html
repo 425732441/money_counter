@@ -344,6 +344,72 @@
           </label>
         </div>
 
+        <section class="share-template-section" aria-labelledby="share-template-title">
+          <div class="share-template-heading">
+            <div>
+              <p class="eyebrow">分享图</p>
+              <h2 id="share-template-title">选择分享模板</h2>
+            </div>
+            <span class="share-template-hint">悬停或聚焦查看预览</span>
+          </div>
+          <div class="share-template-grid" role="group" aria-label="分享模板">
+            <button
+              id="share-template-daily-report"
+              class="share-template-option is-daily-report"
+              type="button"
+              data-share-template="dailyReport"
+              aria-pressed="true"
+            >
+              <span class="share-template-meta">
+                <strong>今日打工战报</strong>
+                <small>深绿 · 金色</small>
+              </span>
+              <span class="share-template-preview" aria-hidden="true">
+                <span class="preview-title"></span>
+                <span class="preview-hero"></span>
+                <span class="preview-row"></span>
+                <span class="preview-bar"></span>
+              </span>
+            </button>
+            <button
+              id="share-template-fishing-bill"
+              class="share-template-option is-fishing-bill"
+              type="button"
+              data-share-template="fishingBill"
+              aria-pressed="false"
+            >
+              <span class="share-template-meta">
+                <strong>摸鱼回血账单</strong>
+                <small>蓝紫 · 青色</small>
+              </span>
+              <span class="share-template-preview" aria-hidden="true">
+                <span class="preview-title"></span>
+                <span class="preview-hero"></span>
+                <span class="preview-row"></span>
+                <span class="preview-bar"></span>
+              </span>
+            </button>
+            <button
+              id="share-template-offwork-card"
+              class="share-template-option is-offwork-card"
+              type="button"
+              data-share-template="offworkCard"
+              aria-pressed="false"
+            >
+              <span class="share-template-meta">
+                <strong>下班生存卡</strong>
+                <small>橙红 · 暖黄</small>
+              </span>
+              <span class="share-template-preview" aria-hidden="true">
+                <span class="preview-title"></span>
+                <span class="preview-hero"></span>
+                <span class="preview-row"></span>
+                <span class="preview-bar"></span>
+              </span>
+            </button>
+          </div>
+        </section>
+
         <div class="settings-actions">
           <button id="save-settings" class="primary-button" type="button">保存设置</button>
           <button id="send-notification" class="secondary-button" type="button">发送测试通知</button>

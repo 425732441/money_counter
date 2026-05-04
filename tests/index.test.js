@@ -98,6 +98,42 @@ describe("compact widget metric roles", () => {
   });
 });
 
+describe("share template selector", () => {
+  it("exposes compact template choices with preview popovers", () => {
+    for (const id of [
+      "share-template-daily-report",
+      "share-template-fishing-bill",
+      "share-template-offwork-card",
+    ]) {
+      assert.match(html, new RegExp(`id="${id}"`));
+    }
+
+    for (const template of ["dailyReport", "fishingBill", "offworkCard"]) {
+      assert.match(html, new RegExp(`data-share-template="${template}"`));
+    }
+
+    for (const label of ["今日打工战报", "摸鱼回血账单", "下班生存卡"]) {
+      assert.match(html, new RegExp(label));
+    }
+
+    assert.match(html, /class="share-template-preview"/);
+  });
+
+  it("wires template persistence and canvas rendering branches", () => {
+    for (const pattern of [
+      /shareTemplate:\s*"dailyReport"/,
+      /SHARE_TEMPLATES/,
+      /shareTemplateButtons/,
+      /function renderShareTemplateSelection/,
+      /function selectShareTemplate/,
+      /function renderFishingBillCard/,
+      /function renderOffworkCard/,
+    ]) {
+      assert.match(main, pattern);
+    }
+  });
+});
+
 describe("first-run onboarding wizard", () => {
   it("exposes the three-step onboarding flow and core controls", () => {
     for (const id of [

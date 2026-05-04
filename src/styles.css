@@ -653,6 +653,182 @@ select {
   margin-top: 18px;
 }
 
+.share-template-section {
+  position: relative;
+  margin-top: 18px;
+  padding: 14px;
+  border: 1px solid rgba(15, 118, 110, 0.16);
+  border-radius: 10px;
+  background: rgba(230, 251, 245, 0.58);
+}
+
+.share-template-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.share-template-heading h2 {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: 1rem;
+}
+
+.share-template-hint {
+  color: var(--color-subtle);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.share-template-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.share-template-option {
+  position: relative;
+  min-height: 62px;
+  border: 1px solid rgba(15, 118, 110, 0.2);
+  border-radius: 9px;
+  padding: 10px;
+  color: var(--color-ink);
+  background: #ffffff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.share-template-option[aria-pressed="true"] {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.22);
+}
+
+.share-template-meta {
+  display: grid;
+  gap: 4px;
+}
+
+.share-template-meta strong {
+  font-size: 0.86rem;
+}
+
+.share-template-meta small {
+  color: var(--color-subtle);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.share-template-preview {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  z-index: 24;
+  width: 210px;
+  height: 112px;
+  border-radius: 12px;
+  padding: 16px;
+  display: grid;
+  gap: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 6px) scale(0.98);
+  transition:
+    opacity 180ms ease-out,
+    transform 180ms ease-out;
+}
+
+.share-template-option:hover .share-template-preview,
+.share-template-option:focus-visible .share-template-preview {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+
+.share-template-preview .preview-title,
+.share-template-preview .preview-hero,
+.share-template-preview .preview-row,
+.share-template-preview .preview-bar {
+  display: block;
+  border-radius: 999px;
+}
+
+.share-template-preview .preview-title {
+  width: 92px;
+  height: 8px;
+  opacity: 0.72;
+}
+
+.share-template-preview .preview-hero {
+  width: 138px;
+  height: 22px;
+}
+
+.share-template-preview .preview-row {
+  width: 112px;
+  height: 8px;
+  opacity: 0.82;
+}
+
+.share-template-preview .preview-bar {
+  width: 164px;
+  height: 10px;
+}
+
+.share-template-option.is-daily-report .share-template-preview {
+  background: linear-gradient(135deg, #102522, #173d38);
+  box-shadow: 0 16px 34px rgba(16, 37, 34, 0.34);
+}
+
+.share-template-option.is-daily-report .preview-title,
+.share-template-option.is-daily-report .preview-row {
+  background: #a7f3d0;
+}
+
+.share-template-option.is-daily-report .preview-hero {
+  background: #fff1b8;
+}
+
+.share-template-option.is-daily-report .preview-bar {
+  background: linear-gradient(90deg, #14b8a6, #ffb020);
+}
+
+.share-template-option.is-fishing-bill .share-template-preview {
+  background: linear-gradient(135deg, #17133f, #312e81);
+  box-shadow: 0 16px 34px rgba(49, 46, 129, 0.34);
+}
+
+.share-template-option.is-fishing-bill .preview-title,
+.share-template-option.is-fishing-bill .preview-row {
+  background: #c4b5fd;
+}
+
+.share-template-option.is-fishing-bill .preview-hero {
+  background: #a5f3fc;
+}
+
+.share-template-option.is-fishing-bill .preview-bar {
+  background: linear-gradient(90deg, #8b5cf6, #22d3ee);
+}
+
+.share-template-option.is-offwork-card .share-template-preview {
+  background: linear-gradient(135deg, #431407, #7c2d12);
+  box-shadow: 0 16px 34px rgba(124, 45, 18, 0.34);
+}
+
+.share-template-option.is-offwork-card .preview-title,
+.share-template-option.is-offwork-card .preview-row {
+  background: #fed7aa;
+}
+
+.share-template-option.is-offwork-card .preview-hero {
+  background: #ffedd5;
+}
+
+.share-template-option.is-offwork-card .preview-bar {
+  background: linear-gradient(90deg, #f97316, #facc15);
+}
+
 .primary-button,
 .secondary-button,
 .danger-button {

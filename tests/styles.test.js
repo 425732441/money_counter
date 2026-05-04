@@ -53,6 +53,16 @@ describe("settings window layout CSS", () => {
     assert.match(styles, /\.field-help::after\s*\{[^}]*content:\s*attr\(data-tip\);/);
     assert.match(styles, /\.field-help:hover::after,\s*\.field-help:focus-visible::after\s*\{[^}]*opacity:\s*1;/);
   });
+
+  it("keeps share template previews compact until hover or focus", () => {
+    assert.match(styles, /\.share-template-grid\s*\{/);
+    assert.match(styles, /\.share-template-preview\s*\{[^}]*opacity:\s*0;/);
+    assert.match(
+      styles,
+      /\.share-template-option:hover\s+\.share-template-preview,\s*\.share-template-option:focus-visible\s+\.share-template-preview\s*\{[^}]*opacity:\s*1;/,
+    );
+    assert.match(styles, /\.share-template-option\[aria-pressed="true"\]/);
+  });
 });
 
 describe("local stats hover panel CSS", () => {
