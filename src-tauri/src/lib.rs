@@ -196,8 +196,8 @@ fn open_settings_window_impl(app: &tauri::AppHandle) -> tauri::Result<()> {
 
     WebviewWindowBuilder::new(app, "settings", WebviewUrl::App("index.html".into()))
         .title("回血计数器设置")
-        .inner_size(720.0, 760.0)
-        .min_inner_size(560.0, 520.0)
+        .inner_size(720.0, 680.0)
+        .min_inner_size(560.0, 480.0)
         .resizable(true)
         .center()
         .build()?;
@@ -336,6 +336,58 @@ fn open_notification_settings() -> Result<(), String> {
     open_notification_settings_impl()
 }
 
+fn is_external_url_allowed(url: &str) -> bool {
+    let trimmed = url.trim();
+    trimmed == url
+        && !trimmed.is_empty()
+        && !trimmed.chars().any(char::is_control)
+        && (trimmed.starts_with("https://") || trimmed.starts_with("http://"))
+}
+
+#[cfg(windows)]
+fn open_external_url_impl(url: &str) -> Result<(), String> {
+    if !is_external_url_allowed(url) {
+        return Err("只允许打开 http 或 https 链接。".to_string());
+    }
+
+    Command::new("explorer.exe")
+        .arg(url)
+        .spawn()
+        .map(|_| ())
+        .map_err(|error| error.to_string())
+}
+
+#[cfg(target_os = "macos")]
+fn open_external_url_impl(url: &str) -> Result<(), String> {
+    if !is_external_url_allowed(url) {
+        return Err("只允许打开 http 或 https 链接。".to_string());
+    }
+
+    Command::new("open")
+        .arg(url)
+        .spawn()
+        .map(|_| ())
+        .map_err(|error| error.to_string())
+}
+
+#[cfg(all(not(windows), not(target_os = "macos")))]
+fn open_external_url_impl(url: &str) -> Result<(), String> {
+    if !is_external_url_allowed(url) {
+        return Err("只允许打开 http 或 https 链接。".to_string());
+    }
+
+    Command::new("xdg-open")
+        .arg(url)
+        .spawn()
+        .map(|_| ())
+        .map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn open_external_url(url: String) -> Result<(), String> {
+    open_external_url_impl(&url)
+}
+
 #[tauri::command]
 fn send_native_notification(
     app: tauri::AppHandle,
@@ -378,6 +430,7 @@ pub fn run() {
             update_tray_status,
             get_notification_diagnostics,
             open_notification_settings,
+            open_external_url,
             send_native_notification,
             save_png
         ])
@@ -440,5 +493,16 @@ mod tests {
     #[test]
     fn notification_settings_uri_targets_windows_notifications() {
         assert_eq!(notification_settings_uri(), "ms-settings:notifications");
+    }
+
+    #[test]
+    fn external_url_validation_allows_only_web_urls() {
+        assert!(is_external_url_allowed(
+            "https://github.com/425732441/money_counter"
+        ));
+        assert!(is_external_url_allowed("http://localhost:1420"));
+        assert!(!is_external_url_allowed("ms-settings:notifications"));
+        assert!(!is_external_url_allowed("file:///C:/Windows/System32/cmd.exe"));
+        assert!(!is_external_url_allowed("https://github.com/\ncalc"));
     }
 }

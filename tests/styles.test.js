@@ -82,7 +82,9 @@ describe("settings window layout CSS", () => {
   it("keeps the settings view fully visible when possible and scrollable as fallback", () => {
     assert.match(styles, /body\.is-settings-window\s*\{[^}]*overflow:\s*hidden;/);
     assert.match(styles, /\.settings-shell\s*\{[^}]*height:\s*100vh;[^}]*overflow-y:\s*auto;/);
+    assert.match(styles, /\.settings-shell\s*\{[^}]*padding:\s*10px 16px 14px;/);
     assert.match(styles, /\.settings-shell\s*\{[^}]*align-items:\s*start;/);
+    assert.match(styles, /\.settings-panel\s*\{[^}]*padding:\s*16px;/);
   });
 
   it("keeps the main status menu narrow", () => {
@@ -104,6 +106,22 @@ describe("settings window layout CSS", () => {
       /\.share-template-option:hover\s+\.share-template-preview,\s*\.share-template-option:focus-visible\s+\.share-template-preview\s*\{[^}]*opacity:\s*1;/,
     );
     assert.match(styles, /\.share-template-option\[aria-pressed="true"\]/);
+  });
+
+  it("styles the about and feedback dialog as an overlay", () => {
+    for (const pattern of [
+      /\.about-feedback-link-row\s*\{/,
+      /\.about-feedback-dialog\s*\{/,
+      /\.about-feedback-dialog\[open\]\s*\{/,
+      /\.about-feedback-card\s*\{/,
+      /\.about-feedback-heading\s*\{/,
+      /\.version-pill\s*\{/,
+      /\.about-feedback-list\s*\{/,
+      /\.about-feedback-privacy\s*\{/,
+      /\.about-feedback-actions\s*\{/,
+    ]) {
+      assert.match(styles, pattern);
+    }
   });
 });
 

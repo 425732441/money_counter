@@ -1,0 +1,718 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>回血计数器｜打工人的桌面回血小工具</title>
+    <style>
+      :root {
+        --ink: #102522;
+        --muted: #55726d;
+        --primary: #0f766e;
+        --primary-strong: #115e59;
+        --accent: #ffb020;
+        --rose: #e11d48;
+        --blue: #2563eb;
+        --panel: rgba(255, 255, 255, 0.86);
+        --panel-strong: rgba(255, 255, 255, 0.96);
+        --line: rgba(15, 118, 110, 0.18);
+        --shadow: 0 24px 70px rgba(16, 37, 34, 0.16);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          linear-gradient(90deg, rgba(225, 29, 72, 0.08) 1px, transparent 1px),
+          linear-gradient(180deg, rgba(37, 99, 235, 0.07) 1px, transparent 1px),
+          radial-gradient(circle at top left, rgba(255, 176, 32, 0.24), transparent 32rem),
+          radial-gradient(circle at 80% 18%, rgba(20, 184, 166, 0.22), transparent 28rem),
+          #f0fdfa;
+        background-size:
+          44px 44px,
+          44px 44px,
+          auto,
+          auto,
+          auto;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          "PingFang SC", "Microsoft YaHei", sans-serif;
+        line-height: 1.6;
+      }
+
+      a,
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      :focus-visible {
+        outline: 3px solid rgba(255, 176, 32, 0.86);
+        outline-offset: 3px;
+      }
+
+      .page {
+        width: min(1120px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 22px 0 48px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 36px;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--primary-strong);
+        font-weight: 900;
+        text-decoration: none;
+      }
+
+      .brand-mark {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        border-radius: 10px;
+        color: #fff8df;
+        background: linear-gradient(135deg, #0f766e, #102522);
+        box-shadow: 0 10px 24px rgba(15, 118, 110, 0.24);
+      }
+
+      .nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+
+      .nav a {
+        border-radius: 999px;
+        padding: 8px 12px;
+        color: var(--muted);
+        font-size: 0.92rem;
+        font-weight: 800;
+        text-decoration: none;
+      }
+
+      .nav a:hover {
+        color: var(--primary-strong);
+        background: rgba(255, 255, 255, 0.72);
+      }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(300px, 0.95fr);
+        gap: 26px;
+        align-items: stretch;
+      }
+
+      .hero-copy,
+      .calculator,
+      .section-card {
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(14px);
+      }
+
+      .hero-copy {
+        padding: clamp(26px, 5vw, 52px);
+        background:
+          radial-gradient(circle at 92% 12%, rgba(255, 176, 32, 0.22), transparent 9rem),
+          linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(240, 253, 250, 0.82));
+      }
+
+      .eyebrow {
+        margin: 0 0 12px;
+        color: var(--primary);
+        font-size: 0.82rem;
+        font-weight: 900;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3,
+      p {
+        margin-top: 0;
+      }
+
+      h1 {
+        margin-bottom: 16px;
+        font-size: clamp(2.3rem, 7vw, 5.3rem);
+        line-height: 0.98;
+        letter-spacing: -0.07em;
+      }
+
+      h2 {
+        margin-bottom: 12px;
+        font-size: clamp(1.5rem, 3vw, 2.25rem);
+        letter-spacing: -0.04em;
+      }
+
+      h3 {
+        margin-bottom: 6px;
+        font-size: 1.02rem;
+      }
+
+      .lead {
+        max-width: 620px;
+        margin-bottom: 24px;
+        color: var(--muted);
+        font-size: 1.08rem;
+        font-weight: 700;
+      }
+
+      .cta-row,
+      .button-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .button {
+        display: inline-flex;
+        min-height: 44px;
+        align-items: center;
+        justify-content: center;
+        border: 0;
+        border-radius: 999px;
+        padding: 0 18px;
+        font-weight: 900;
+        text-decoration: none;
+        transition:
+          transform 160ms ease-out,
+          box-shadow 160ms ease-out,
+          background-color 160ms ease-out;
+      }
+
+      .button:hover {
+        transform: translateY(-1px);
+      }
+
+      .button.primary {
+        color: #fff;
+        background: var(--primary);
+        box-shadow: 0 14px 26px rgba(15, 118, 110, 0.24);
+      }
+
+      .button.secondary {
+        color: var(--ink);
+        background: #fff4cc;
+      }
+
+      .button.ghost {
+        color: var(--primary-strong);
+        background: rgba(255, 255, 255, 0.7);
+      }
+
+      .calculator {
+        padding: 22px;
+      }
+
+      .calculator form {
+        display: grid;
+        gap: 12px;
+      }
+
+      label {
+        display: grid;
+        gap: 6px;
+        color: var(--muted);
+        font-size: 0.88rem;
+        font-weight: 800;
+      }
+
+      input,
+      select {
+        min-height: 44px;
+        width: 100%;
+        border: 1px solid rgba(15, 118, 110, 0.22);
+        border-radius: 14px;
+        padding: 0 12px;
+        color: var(--ink);
+        background: rgba(255, 255, 255, 0.92);
+      }
+
+      .result {
+        margin-top: 16px;
+        border-radius: 18px;
+        padding: 18px;
+        color: #f8fffb;
+        background: linear-gradient(135deg, #102522, #173d38);
+      }
+
+      .result strong {
+        display: block;
+        margin-bottom: 4px;
+        color: #fff1b8;
+        font-size: clamp(1.8rem, 5vw, 3rem);
+        line-height: 1;
+      }
+
+      .result span {
+        color: #a7f3d0;
+        font-weight: 800;
+      }
+
+      .section-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 22px;
+      }
+
+      .section-card {
+        padding: 22px;
+      }
+
+      .section-card p,
+      .section-card li,
+      .fine-print {
+        color: var(--muted);
+        font-weight: 700;
+      }
+
+      .section-card ul {
+        display: grid;
+        gap: 8px;
+        margin: 12px 0 0;
+        padding-left: 1.1rem;
+      }
+
+      .wide {
+        grid-column: 1 / -1;
+      }
+
+      .feature-list {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+        margin-top: 18px;
+      }
+
+      .feature-chip {
+        position: relative;
+        min-height: 168px;
+        display: grid;
+        align-content: start;
+        gap: 10px;
+        overflow: hidden;
+        border: 1px solid rgba(15, 118, 110, 0.16);
+        border-radius: 22px;
+        padding: 18px;
+        background:
+          linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(255, 244, 204, 0.72)),
+          var(--panel-strong);
+        box-shadow: 0 14px 30px rgba(16, 37, 34, 0.1);
+        transition:
+          transform 220ms ease-out,
+          border-color 220ms ease-out,
+          box-shadow 220ms ease-out;
+      }
+
+      .feature-chip::after {
+        content: "";
+        position: absolute;
+        inset: auto -24px -32px auto;
+        width: 92px;
+        height: 92px;
+        border-radius: 999px;
+        background: rgba(20, 184, 166, 0.12);
+      }
+
+      .feature-chip:hover {
+        transform: translateY(-4px);
+        border-color: rgba(225, 29, 72, 0.28);
+        box-shadow: 0 22px 44px rgba(16, 37, 34, 0.15);
+      }
+
+      .feature-icon {
+        width: 44px;
+        height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 15px;
+        color: #fff;
+        background: linear-gradient(135deg, var(--primary), var(--blue));
+        box-shadow: 0 12px 22px rgba(15, 118, 110, 0.24);
+        transition: transform 220ms ease-out;
+      }
+
+      .feature-chip:hover .feature-icon {
+        transform: rotate(-4deg) scale(1.06);
+      }
+
+      .feature-icon svg {
+        width: 24px;
+        height: 24px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .feature-chip strong {
+        display: block;
+        margin-bottom: 5px;
+        color: var(--ink);
+        font-size: 1.05rem;
+      }
+
+      .share-card {
+        background:
+          linear-gradient(135deg, rgba(255, 176, 32, 0.18), transparent 42%),
+          rgba(255, 255, 255, 0.86);
+      }
+
+      @media (max-width: 920px) {
+        .hero,
+        .feature-list {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+
+      .faq {
+        grid-column: span 2;
+      }
+
+      details {
+        border-top: 1px solid rgba(15, 118, 110, 0.14);
+        padding: 12px 0;
+      }
+
+      details:first-of-type {
+        border-top: 0;
+      }
+
+      summary {
+        cursor: pointer;
+        color: var(--ink);
+        font-weight: 900;
+      }
+
+      footer {
+        margin-top: 28px;
+        color: var(--muted);
+        font-size: 0.88rem;
+        font-weight: 700;
+        text-align: center;
+      }
+
+      @media (max-width: 720px) {
+        .page {
+          width: min(100% - 20px, 560px);
+          padding-top: 14px;
+        }
+
+        .topbar {
+          align-items: flex-start;
+          margin-bottom: 18px;
+        }
+
+        .nav {
+          display: none;
+        }
+
+        .hero,
+        .section-grid,
+        .feature-list {
+          grid-template-columns: 1fr;
+        }
+
+        .hero-copy,
+        .calculator,
+        .section-card {
+          border-radius: 18px;
+        }
+
+        .faq {
+          grid-column: auto;
+        }
+
+        .wide {
+          grid-column: auto;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          transition-duration: 0.01ms !important;
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="topbar">
+        <a class="brand" href="#top" aria-label="回血计数器首页">
+          <span class="brand-mark" aria-hidden="true">¥</span>
+          <span>回血计数器</span>
+        </a>
+        <nav class="nav" aria-label="页面导航">
+          <a href="#estimate">在线估算</a>
+          <a href="#features">功能亮点</a>
+          <a href="#share">分享玩法</a>
+          <a href="#privacy">隐私承诺</a>
+          <a href="#faq">常见问题</a>
+        </nav>
+      </header>
+
+      <main id="top">
+        <section class="hero" aria-labelledby="hero-title">
+          <div class="hero-copy">
+            <p class="eyebrow">Office Cashflow Toy</p>
+            <h1 id="hero-title">今天上班，回血了吗？</h1>
+            <p class="lead">
+              输入收入，看看每一秒老板在给你回多少血。回血计数器把上班、摸鱼、午休和下班前的心理活动，变成一个办公室安全的赛博小玩具。
+            </p>
+            <div class="cta-row">
+              <a class="button primary" href="#estimate">算算今天回血速度</a>
+              <a class="button secondary" href="#features">看看桌面版能做什么</a>
+              <a class="button ghost" href="https://github.com/425732441/money_counter/issues">提建议</a>
+            </div>
+          </div>
+
+          <aside id="estimate" class="calculator" aria-labelledby="estimate-title">
+            <p class="eyebrow">在线估算</p>
+            <h2 id="estimate-title">先算个乐子</h2>
+            <form>
+              <label>
+                收入模式
+                <select id="h5-income-mode">
+                  <option value="monthly">月薪</option>
+                  <option value="daily">日薪</option>
+                  <option value="hourly">时薪</option>
+                </select>
+              </label>
+              <label>
+                收入金额
+                <input id="h5-income-amount" type="number" min="0" step="100" value="12000" inputmode="decimal" />
+              </label>
+              <label>
+                每月工作日
+                <input id="h5-work-days" type="number" min="1" max="31" step="0.25" value="21.75" inputmode="decimal" />
+              </label>
+              <label>
+                每天工作小时
+                <input id="h5-daily-hours" type="number" min="1" max="24" step="0.5" value="8" inputmode="decimal" />
+              </label>
+            </form>
+            <div class="result" aria-live="polite">
+              <strong id="h5-estimate-result">¥0.00/s</strong>
+              <span id="h5-estimate-note">输入不会上传，只在本页算个乐子。</span>
+            </div>
+          </aside>
+        </section>
+
+        <section class="section-grid" aria-label="产品与传播信息">
+          <article id="features" class="section-card wide">
+            <p class="eyebrow">Desktop Version</p>
+            <h2>项目功能亮点</h2>
+            <p>网页负责让你先算一下，桌面版负责常驻陪你上班。核心功能围绕“钱在跑、状态在变、下班有盼头”。</p>
+            <div class="feature-list">
+              <div class="feature-chip">
+                <span class="feature-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M12 3v18" />
+                    <path d="M17 7.5c0-1.9-2.2-3-5-3s-5 1.1-5 3 2.2 3 5 3 5 1.1 5 3-2.2 3-5 3-5-1.1-5-3" />
+                  </svg>
+                </span>
+                <strong>每秒到账</strong>
+                <span>把月薪、日薪或时薪换算成每秒回血速度，工作时数字会持续跳动。</span>
+              </div>
+              <div class="feature-chip">
+                <span class="feature-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M4 12a8 8 0 1 0 3-6.2" />
+                    <path d="M4 4v6h6" />
+                    <path d="M12 8v4l3 2" />
+                  </svg>
+                </span>
+                <strong>自动状态</strong>
+                <span>按工作制自动识别开工、午休、快下班和收工，也能手动切换。</span>
+              </div>
+              <div class="feature-chip">
+                <span class="feature-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M4 14c2.2-3.2 5.4-4.8 9.5-4.8H20" />
+                    <path d="M6 18c2.1-2.2 4.6-3.2 7.5-3.2H18" />
+                    <path d="M16 6h4v4" />
+                  </svg>
+                </span>
+                <strong>摸鱼收益</strong>
+                <span>摸鱼不是空白时间，是另一种现金流管理。桌面端会单独累计摸鱼回血。</span>
+              </div>
+              <div class="feature-chip">
+                <span class="feature-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M8 9h8" />
+                    <path d="M9 14h.01" />
+                    <path d="M15 14h.01" />
+                    <rect x="6" y="5" width="12" height="14" rx="4" />
+                    <path d="M12 3v2" />
+                  </svg>
+                </span>
+                <strong>轻角色</strong>
+                <span>不同状态有不同小动作：开工敲键盘、摸鱼摇摆、收工挥手，不做重桌宠。</span>
+              </div>
+              <div class="feature-chip">
+                <span class="feature-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M6 8a6 6 0 0 1 12 0c0 7 3 6 3 8H3c0-2 3-1 3-8" />
+                    <path d="M10 20a2 2 0 0 0 4 0" />
+                  </svg>
+                </span>
+                <strong>低频提醒</strong>
+                <span>喝水、站立、午休、快下班提醒都保持低频，不把陪伴做成打扰。</span>
+              </div>
+              <div class="feature-chip">
+                <span class="feature-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <rect x="4" y="5" width="16" height="14" rx="3" />
+                    <path d="M8 10h8" />
+                    <path d="M8 14h5" />
+                    <path d="M16 14l2 2" />
+                  </svg>
+                </span>
+                <strong>分享战报</strong>
+                <span>做出今日打工战报、摸鱼回血账单、下班生存卡，适合发给同事一起笑。</span>
+              </div>
+            </div>
+          </article>
+
+          <article id="share" class="section-card share-card">
+            <h2>适合发给同事</h2>
+            <p>午饭前算一下回血速度，下班前发一张战报，群里不用解释太多，大家自然懂。</p>
+            <ul>
+              <li>“我今天每秒回血多少？”</li>
+              <li>“这不是摸鱼，是现金流管理。”</li>
+              <li>“下班前最后一段回血冲刺。”</li>
+            </ul>
+          </article>
+
+          <article class="section-card">
+            <h2>适合谁</h2>
+            <p>适合长期坐在 Windows 办公电脑前、想把工作进度变得更有反馈感的人。</p>
+            <ul>
+              <li>喜欢轻量桌面小组件。</li>
+              <li>想要办公室安全的打工人梗。</li>
+              <li>在意收入隐私，不想上传工资数据。</li>
+            </ul>
+          </article>
+
+          <article id="privacy" class="section-card">
+            <h2>隐私承诺</h2>
+            <p>桌面客户端离线优先，设置和统计默认只保存在你的电脑上。反馈信息不会自动上传，也不会包含收入金额明文。</p>
+            <ul>
+              <li>不强制账号。</li>
+              <li>不默认埋点。</li>
+              <li>网页估算器不发送输入数据。</li>
+            </ul>
+          </article>
+
+          <article id="faq" class="section-card faq">
+            <h2>常见问题</h2>
+            <details open>
+              <summary>这个网页会上传我的收入吗？</summary>
+              <p>不会。在线估算只在当前页面内计算，不向服务器提交表单。</p>
+            </details>
+            <details>
+              <summary>这个估算准不准？</summary>
+              <p>它用于娱乐和即时反馈，不做工资条级计算，也不处理个税、奖金、绩效和请假。</p>
+            </details>
+            <details>
+              <summary>适合在办公室用吗？</summary>
+              <p>适合。桌面版默认轻量、可隐藏到托盘，并提供隐私显示模式，避免直接暴露真实金额。</p>
+            </details>
+          </article>
+
+          <article class="section-card">
+            <h2>想看桌面版？</h2>
+            <p>项目已开源。想要新模板、提醒文案或角色动作，可以到 GitHub 提建议。</p>
+            <div class="button-row">
+              <a class="button primary" href="#estimate">先在线算一下</a>
+              <a class="button ghost" href="https://github.com/425732441/money_counter">开源仓库</a>
+              <a class="button secondary" href="https://github.com/425732441/money_counter/issues">提交反馈</a>
+            </div>
+          </article>
+        </section>
+      </main>
+
+      <footer>
+        <p>回血计数器 · 开源仓库：https://github.com/425732441/money_counter</p>
+      </footer>
+    </div>
+
+    <script>
+      const mode = document.querySelector("#h5-income-mode");
+      const amount = document.querySelector("#h5-income-amount");
+      const workDays = document.querySelector("#h5-work-days");
+      const dailyHours = document.querySelector("#h5-daily-hours");
+      const result = document.querySelector("#h5-estimate-result");
+      const note = document.querySelector("#h5-estimate-note");
+
+      function safeNumber(value, fallback) {
+        const number = Number(value);
+        return Number.isFinite(number) && number > 0 ? number : fallback;
+      }
+
+      function calculateEstimate() {
+        const income = safeNumber(amount.value, 0);
+        const days = safeNumber(workDays.value, 21.75);
+        const hours = safeNumber(dailyHours.value, 8);
+        const secondsPerDay = hours * 3600;
+        let perSecond = 0;
+
+        if (mode.value === "hourly") {
+          perSecond = income / 3600;
+        } else if (mode.value === "daily") {
+          perSecond = income / secondsPerDay;
+        } else {
+          perSecond = income / days / secondsPerDay;
+        }
+
+        const dayTotal = perSecond * secondsPerDay;
+        result.textContent = `¥${perSecond.toFixed(4)}/s`;
+        note.textContent = `按当前设置，完整工作日约回血 ¥${dayTotal.toFixed(2)}。计算不离开本页面。`;
+      }
+
+      for (const control of [mode, amount, workDays, dailyHours]) {
+        control.addEventListener("input", calculateEstimate);
+        control.addEventListener("change", calculateEstimate);
+      }
+
+      calculateEstimate();
+    </script>
+  </body>
+</html>
