@@ -36,3 +36,14 @@ describe("settings window release controls", () => {
     assert.match(lib, /\.inner_size\(720\.0,\s*680\.0\)/);
   });
 });
+
+describe("Windows release executable", () => {
+  it("uses the Windows GUI subsystem in release builds to avoid a console window", () => {
+    const main = readFileSync("src-tauri/src/main.rs", "utf8");
+
+    assert.match(
+      main,
+      /#!\[cfg_attr\(not\(debug_assertions\),\s*windows_subsystem\s*=\s*"windows"\)\]/,
+    );
+  });
+});

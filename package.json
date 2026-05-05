@@ -8,7 +8,9 @@
     "test": "node --test tests/*.test.js",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "package:release": "powershell -ExecutionPolicy Bypass -File scripts/package-release.ps1",
+    "deploy:serv00": "powershell -ExecutionPolicy Bypass -File scripts/deploy-serv00.ps1"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.10.1",

@@ -11,6 +11,7 @@ describe("H5 landing page", () => {
       "今天上班，回血了吗？",
       "在线估算",
       "项目功能亮点",
+      "下载桌面版",
       "每秒到账",
       "自动状态",
       "摸鱼收益",
@@ -28,6 +29,22 @@ describe("H5 landing page", () => {
 
     assert.match(h5, /https:\/\/github\.com\/425732441\/money_counter/);
     assert.match(h5, /https:\/\/github\.com\/425732441\/money_counter\/issues/);
+  });
+
+  it("prominently links to Serv00 installer and portable downloads", () => {
+    assert.match(h5, /id="download"/);
+    assert.match(h5, /class="download-card"/);
+    assert.match(
+      h5,
+      /https:\/\/money-counter\.hualeizhang\.serv00\.net\/download\/installer\/MoneyCounter-0\.0\.1-setup\.exe/,
+    );
+    assert.match(
+      h5,
+      /https:\/\/money-counter\.hualeizhang\.serv00\.net\/download\/portable\/MoneyCounter-0\.0\.1-portable\.exe/,
+    );
+    assert.match(h5, /安装版/);
+    assert.match(h5, /绿色版/);
+    assert.doesNotMatch(h5, /money_counter\.hualeizhang\.serv00\.net/);
   });
 
   it("removes download-oriented FAQ copy from the seeding page", () => {

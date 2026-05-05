@@ -3,6 +3,7 @@
 .codex
 node_modules
 dist
+release
 src-tauri/target
 src-tauri/gen
 docs/xhs/
@@ -10,3 +11,5 @@ findings.md
 progress.md
 task_plan.md
 package-lock.json
+package-release.ps1
+deploy-serv00.ps1

@@ -92,6 +92,19 @@ npm run tauri -- build
 
 当前 Tauri 配置的打包目标是 Windows NSIS。
 
+生成带版本号的发布产物：
+
+```powershell
+npm run package:release
+```
+
+输出目录会区分安装版和绿色版：
+
+```text
+release/installer/MoneyCounter-0.0.1-setup.exe
+release/portable/MoneyCounter-0.0.1-portable.exe
+```
+
 ## 目录结构
 
 ```text

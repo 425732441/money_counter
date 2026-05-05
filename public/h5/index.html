@@ -229,6 +229,45 @@
         background: rgba(255, 255, 255, 0.7);
       }
 
+      .download-card {
+        display: grid;
+        gap: 12px;
+        margin-top: 22px;
+        border: 1px solid rgba(225, 29, 72, 0.2);
+        border-radius: 22px;
+        padding: 18px;
+        background:
+          linear-gradient(135deg, rgba(255, 176, 32, 0.3), rgba(255, 255, 255, 0.82)),
+          rgba(255, 255, 255, 0.9);
+        box-shadow: 0 18px 36px rgba(225, 29, 72, 0.12);
+      }
+
+      .download-card h2 {
+        margin-bottom: 4px;
+        font-size: clamp(1.35rem, 3vw, 2rem);
+      }
+
+      .download-card p {
+        margin-bottom: 0;
+        color: var(--muted);
+        font-weight: 800;
+      }
+
+      .download-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        color: var(--primary-strong);
+        font-size: 0.86rem;
+        font-weight: 900;
+      }
+
+      .download-meta span {
+        border-radius: 999px;
+        padding: 5px 9px;
+        background: rgba(255, 255, 255, 0.76);
+      }
+
       .calculator {
         padding: 22px;
       }
@@ -481,6 +520,7 @@
         </a>
         <nav class="nav" aria-label="页面导航">
           <a href="#estimate">在线估算</a>
+          <a href="#download">下载</a>
           <a href="#features">功能亮点</a>
           <a href="#share">分享玩法</a>
           <a href="#privacy">隐私承诺</a>
@@ -500,6 +540,30 @@
               <a class="button primary" href="#estimate">算算今天回血速度</a>
               <a class="button secondary" href="#features">看看桌面版能做什么</a>
               <a class="button ghost" href="https://github.com/425732441/money_counter/issues">提建议</a>
+            </div>
+            <div id="download" class="download-card" aria-labelledby="download-title">
+              <p class="eyebrow">Windows Download</p>
+              <h2 id="download-title">下载桌面版</h2>
+              <p>优先推荐安装版；只想临时试用，可以下载绿色版可执行文件。</p>
+              <div class="button-row" aria-label="下载链接">
+                <a
+                  class="button primary"
+                  href="https://money-counter.hualeizhang.serv00.net/download/installer/MoneyCounter-0.0.1-setup.exe"
+                >
+                  下载安装版
+                </a>
+                <a
+                  class="button secondary"
+                  href="https://money-counter.hualeizhang.serv00.net/download/portable/MoneyCounter-0.0.1-portable.exe"
+                >
+                  下载绿色版
+                </a>
+              </div>
+              <div class="download-meta" aria-label="版本信息">
+                <span>v0.0.1</span>
+                <span>Windows</span>
+                <span>安装版 / 绿色版</span>
+              </div>
             </div>
           </div>
 
