@@ -24,3 +24,15 @@ describe("main window dimensions", () => {
     assert.equal(capabilities.permissions.includes("core:window:allow-set-shadow"), true);
   });
 });
+
+describe("settings window release controls", () => {
+  it("allows text feedback copying through clipboard permissions", () => {
+    assert.equal(capabilities.permissions.includes("clipboard-manager:allow-write-text"), true);
+  });
+
+  it("starts settings below typical small laptop viewport height", () => {
+    const lib = readFileSync("src-tauri/src/lib.rs", "utf8");
+
+    assert.match(lib, /\.inner_size\(720\.0,\s*680\.0\)/);
+  });
+});

@@ -149,6 +149,7 @@ describe("share template selector", () => {
     }
 
     assert.match(html, /class="share-template-preview"/);
+    assert.doesNotMatch(html, /选择分享模板/);
   });
 
   it("wires template persistence and canvas rendering branches", () => {
@@ -163,6 +164,58 @@ describe("share template selector", () => {
     ]) {
       assert.match(main, pattern);
     }
+  });
+});
+
+describe("about and feedback release loop", () => {
+  it("opens repository, feedback, H5, and privacy information from a settings dialog", () => {
+    for (const id of [
+      "open-about-feedback",
+      "about-feedback-dialog",
+      "app-version",
+      "repository-url",
+      "feedback-url",
+      "h5-url",
+      "close-about-feedback",
+      "open-repository",
+      "open-feedback",
+      "copy-feedback-info",
+    ]) {
+      assert.match(html, new RegExp(`id="${id}"`));
+    }
+
+    assert.match(html, /关于与反馈/);
+    assert.doesNotMatch(html, /发布闭环/);
+    assert.doesNotMatch(html, /id="about-feedback-section"/);
+    assert.match(html, /role="dialog"/);
+    assert.match(html, /hidden/);
+    assert.match(html, /https:\/\/github\.com\/425732441\/money_counter/);
+    assert.match(html, /https:\/\/github\.com\/425732441\/money_counter\/issues/);
+    assert.match(html, /H5 地址/);
+    assert.match(html, /准备中/);
+    assert.match(html, /设置与统计只保存在本机/);
+  });
+
+  it("wires release links, external opening, and feedback info copying", () => {
+    for (const pattern of [
+      /APP_VERSION\s*=\s*"0\.0\.1"/,
+      /REPOSITORY_URL\s*=\s*"https:\/\/github\.com\/425732441\/money_counter"/,
+      /FEEDBACK_URL\s*=\s*"https:\/\/github\.com\/425732441\/money_counter\/issues"/,
+      /H5_URL_LABEL\s*=\s*"准备中"/,
+      /writeText/,
+      /function buildFeedbackInfo/,
+      /function openExternalUrl/,
+      /function copyFeedbackInfo/,
+      /function openAboutFeedback/,
+      /function closeAboutFeedback/,
+      /open_external_url/,
+    ]) {
+      assert.match(main, pattern);
+    }
+
+    const feedbackInfoBody =
+      main.match(/function buildFeedbackInfo\(\)\s*\{(?<body>[\s\S]*?)\n\}/)?.groups.body || "";
+    assert.doesNotMatch(feedbackInfoBody, /incomeAmount|income-amount/);
   });
 });
 

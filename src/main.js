@@ -49,9 +49,14 @@ import {
 } from "@tauri-apps/api/window";
 import { emitTo, listen } from "@tauri-apps/api/event";
 import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
-import { writeImage } from "@tauri-apps/plugin-clipboard-manager";
+import { writeImage, writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { save } from "@tauri-apps/plugin-dialog";
 import { load } from "@tauri-apps/plugin-store";
+
+const APP_VERSION = "0.0.1";
+const REPOSITORY_URL = "https://github.com/425732441/money_counter";
+const FEEDBACK_URL = "https://github.com/425732441/money_counter/issues";
+const H5_URL_LABEL = "准备中";
 
 const DEFAULT_SETTINGS = {
   ...DEFAULT_WORK_SETTINGS,
@@ -135,6 +140,12 @@ const el = {
   quietEnd: document.querySelector("#quiet-end"),
   saveSettings: document.querySelector("#save-settings"),
   clearSettings: document.querySelector("#clear-settings"),
+  openAboutFeedback: document.querySelector("#open-about-feedback"),
+  aboutFeedbackDialog: document.querySelector("#about-feedback-dialog"),
+  closeAboutFeedback: document.querySelector("#close-about-feedback"),
+  openRepository: document.querySelector("#open-repository"),
+  openFeedback: document.querySelector("#open-feedback"),
+  copyFeedbackInfo: document.querySelector("#copy-feedback-info"),
   openSettings: document.querySelector("#open-settings"),
   closeSettings: document.querySelector("#close-settings"),
   sendNotification: document.querySelector("#send-notification"),
@@ -302,14 +313,13 @@ async function fitSettingsWindow() {
   const workArea = monitor.workArea || monitor;
   const workAreaWidth = Math.round(workArea.size.width / Math.max(1, scaleFactor));
   const workAreaHeight = Math.round(workArea.size.height / Math.max(1, scaleFactor));
-  const contentHeight = Math.ceil(el.settingsView.scrollHeight || 720);
   const width = Math.min(720, Math.max(560, workAreaWidth - 80));
-  const maxHeight = Math.max(520, workAreaHeight - 80);
-  const height = Math.min(maxHeight, Math.max(620, contentHeight));
+  const maxHeight = Math.max(520, workAreaHeight - 120);
+  const height = Math.min(680, maxHeight);
 
   await currentWindow.setSizeConstraints({
     minWidth: 560,
-    minHeight: 520,
+    minHeight: 480,
   });
   await currentWindow.setSize(new LogicalSize(width, height));
 }
@@ -561,6 +571,60 @@ function displayLocalStatsAmount(summary) {
 
 function getStatusLabel(statusId) {
   return WORK_STATUSES[statusId]?.label || statusId || "自动";
+}
+
+function enabledLabel(value) {
+  return value ? "开启" : "关闭";
+}
+
+function buildFeedbackInfo() {
+  return [
+    "回血计数器反馈信息",
+    `版本：v${APP_VERSION}`,
+    `开源仓库：${REPOSITORY_URL}`,
+    `反馈入口：${FEEDBACK_URL}`,
+    `H5 地址：${H5_URL_LABEL}`,
+    `隐私显示：${settings.privacyMode}`,
+    `低频提醒：${enabledLabel(settings.remindersEnabled)}`,
+    `本地统计：${enabledLabel(settings.localStatsEnabled)}`,
+    `轻角色：${enabledLabel(settings.characterEnabled)}`,
+    "说明：反馈信息不包含收入金额明文。",
+  ].join("\n");
+}
+
+async function openExternalUrl(url) {
+  await invoke("open_external_url", { url });
+}
+
+async function copyFeedbackInfo() {
+  el.copyFeedbackInfo.disabled = true;
+  try {
+    await writeText(buildFeedbackInfo());
+    setStatus("已复制反馈信息，可粘贴到 GitHub Issue。", "settings");
+  } catch (error) {
+    setStatus(`复制反馈信息失败：${error}`, "settings");
+  } finally {
+    el.copyFeedbackInfo.disabled = false;
+  }
+}
+
+function openAboutFeedback() {
+  el.aboutFeedbackDialog.hidden = false;
+  el.closeAboutFeedback.focus();
+}
+
+function closeAboutFeedback() {
+  el.aboutFeedbackDialog.hidden = true;
+  el.openAboutFeedback.focus();
+}
+
+async function openReleaseLink(url, label) {
+  try {
+    await openExternalUrl(url);
+    setStatus(`已打开${label}。`, "settings");
+  } catch (error) {
+    setStatus(`无法打开${label}：${error}`, "settings");
+  }
 }
 
 function updateStatusMenuSelection(statusId = dayState.statusOverride || "auto") {
@@ -1450,6 +1514,17 @@ el.saveSettings.addEventListener("click", persistSettings);
 el.clearSettings.addEventListener("click", clearSettings);
 el.sendNotification.addEventListener("click", notify);
 el.openNotificationSettings.addEventListener("click", openNotificationSettings);
+el.openAboutFeedback.addEventListener("click", openAboutFeedback);
+el.closeAboutFeedback.addEventListener("click", closeAboutFeedback);
+el.aboutFeedbackDialog.addEventListener("click", (event) => {
+  if (event.target === el.aboutFeedbackDialog) closeAboutFeedback();
+});
+el.aboutFeedbackDialog.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeAboutFeedback();
+});
+el.openRepository.addEventListener("click", () => openReleaseLink(REPOSITORY_URL, "开源仓库"));
+el.openFeedback.addEventListener("click", () => openReleaseLink(FEEDBACK_URL, "反馈入口"));
+el.copyFeedbackInfo.addEventListener("click", copyFeedbackInfo);
 el.cycleStatus.addEventListener("click", cycleStatusOverride);
 el.togglePin.addEventListener("click", togglePin);
 el.toggleAutostart.addEventListener("click", toggleAutostart);

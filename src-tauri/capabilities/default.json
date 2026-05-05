@@ -23,6 +23,7 @@
     "autostart:allow-disable",
     "autostart:allow-is-enabled",
     "clipboard-manager:allow-write-image",
+    "clipboard-manager:allow-write-text",
     "dialog:allow-save",
     "notification:default",
     "store:default"
