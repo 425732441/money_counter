@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://money-counter.hualeizhang.serv00.net/sitemap.xml
